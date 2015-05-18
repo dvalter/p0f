@@ -19,3 +19,5 @@ clean:
 publish:
 	@./build.sh publish
 
+dockerimage:
+	docker build -t hauptmedia/p0f .
