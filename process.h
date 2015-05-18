@@ -135,6 +135,9 @@ struct host_data {
 
   u16 http_resp_port;                   /* Port on which response seen        */
 
+  u32 ssl_remote_time;                  /* Last client timestamp from SSL     */
+  u32 ssl_recv_time;                    /* Time drift derived from SSL        */
+
 };
 
 /* Reasons for NAT detection: */
@@ -194,6 +197,8 @@ struct packet_flow {
   u8  http_gotresp1;                    /* Got initial line of a response?    */
 
   struct http_sig http_tmp;             /* Temporary signature                */
+
+  s8  in_ssl;                           /* 0 = tbd, 1 = yes, -1 = no          */
 
 };
 
