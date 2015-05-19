@@ -93,7 +93,9 @@ static u8 stop_soon;                    /* Ctrl-C or so pressed?              */
 u8 daemon_mode;                         /* Running in daemon mode?            */
 
 static u8 set_promisc;                  /* Use promiscuous mode?              */
-         
+
+static u8 verbose;                      /* Use verbose output                 */
+
 static pcap_t *pt;                      /* PCAP capture thingy                */
 
 s32 link_type;                          /* PCAP link type                     */
@@ -135,6 +137,7 @@ static void usage(void) {
 #endif /* !__CYGWIN__ */
 "  -u user   - switch to the specified unprivileged account and chroot\n"
 "  -d        - fork into background (requires -o or -s)\n"
+"  -v        - enable verbose output (only available if we run in foreground)\n"
 "\n"
 "Performance-related options:\n"
 "\n"
@@ -311,7 +314,7 @@ void start_observation(char* keyword, u8 field_cnt, u8 to_srv,
 
   if (obs_fields) FATAL("Premature end of observation.");
 
-  if (!daemon_mode) {
+  if (!daemon_mode && verbose) {
 
     SAYF(".-[ %s/%u -> ", addr_to_str(f->client->addr, f->client->ip_ver),
          f->cli_port);
@@ -353,7 +356,7 @@ void add_observation_field(char* key, u8* value) {
 
   if (!obs_fields) FATAL("Unexpected observation field ('%s').", key);
 
-  if (!daemon_mode)
+  if (!daemon_mode && verbose)
     SAYF("| %-8s = %s\n", key, value ? value : (u8*)"???");
 
   if (log_file) LOGF("|%s=%s", key, value ? value : (u8*)"???");
@@ -362,7 +365,7 @@ void add_observation_field(char* key, u8* value) {
 
   if (!obs_fields) {
 
-    if (!daemon_mode) SAYF("|\n`----\n\n");
+    if (!daemon_mode && verbose) SAYF("|\n`----\n\n");
 
     if (log_file) LOGF("\n");
 
@@ -1026,7 +1029,7 @@ int main(int argc, char** argv) {
   if (getuid() != geteuid())
     FATAL("Please don't make me setuid. See README for more.\n");
 
-  while ((r = getopt(argc, argv, "+LS:df:i:m:o:pr:s:t:u:")) != -1) switch (r) {
+  while ((r = getopt(argc, argv, "+LS:df:i:m:o:pr:s:t:u:v")) != -1) switch (r) {
 
     case 'L':
 
@@ -1106,6 +1109,11 @@ int main(int argc, char** argv) {
         FATAL("Even more promiscuous? People will start talking!");
 
       set_promisc = 1;
+      break;
+
+    case 'v':
+
+      verbose = 1;
       break;
 
     case 'r':
