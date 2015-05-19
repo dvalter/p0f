@@ -108,6 +108,21 @@ unset($resp['status']);
 ?>
 </table>
 <?php
+if (trim($resp["http_raw_sig"]) != "") {
+    list($ver, $horder, $habsent, $expsw) = explode(":", $resp['http_raw_sig']);
+
+    $horder = preg_replace("/,(?![^\[\]]*\])/", "<br/>", $horder);
+?>
+    <h2>HTTP Info</h2>
+    <table border=1>
+        <tr><td>Version</td><td><?=$ver?></td></tr>
+        <tr><td>Present Headers</td><td><?=$horder?></td></tr>
+        <tr><td>Absent Headers</td><td><?=$habsent?></td></tr>
+        <tr><td>User-Agent</td><td><?=$expsw?></td></tr>
+    </table>
+<?php
+}
+
 if (trim($resp["ssl_raw_sig"]) != "") {
     list($sslver, $ciphers, $extensions, $sslflags) = explode(":", $resp['ssl_raw_sig']);
 
