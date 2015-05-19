@@ -17,37 +17,41 @@ define("P0F_STATUS_BADQUERY", 0x00);
 define("P0F_STATUS_OK",       0x10);
 define("P0F_STATUS_NOMATCH",  0x20);
 
-$extensionsData = <<< END_OF_DATA
-0000,server_name
-0001,max_fragment_length
-0002,client_certificate_url
-0003,trusted_ca_keys
-0004,truncated_hmac
-0005,status_request
-0006,user_mapping
-0007,client_authz
-0008,server_authz
-0009,cert_type
-000a,elliptic_curves
-000b,ec_point_formats
-000c,srp
-000d,signature_algorithms
-000e,use_srtp
-000f,heartbeat
-0023,session_ticket
-3374,next_protocol_negotiation
-754f,channel_id
-ff01,renegotiation_info
-END_OF_DATA;
-// Convert extension data into a hashmap
-$extensionDatabase = array();
-$extLines = preg_split("/\n/", $extensionsData);
-foreach($extLines as $extLine) {
-    $extLine = trim($extLine);
-
-    $ext = preg_split("/,/", $extLine);
-    $extensionDatabase[$ext[0]] = $ext[1];
-}
+//see http://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xml
+$tlsExtensions = array(
+    0   => "server_name",
+    1   => "max_fragment_length",
+    2   => "client_certificate_url",
+    3   => "trusted_ca_keys",
+    4   => "truncated_hmac",
+    5   => "status_request",
+    6   => "user_mapping",
+    7   => "client_authz",
+    8   => "server_authz",
+    9   => "cert_type",
+    10  => "elliptic_curves",
+    11  => "ec_point_formats",
+    12  => "srp",
+    13  => "signature_algorithms",
+    14  => "use_srtp",
+    15  => "heartbeat",
+    16  => "application_layer_protocol_negotiation",
+    17  => "status_request_v2",
+    18  => "signed_certificate_timestamp",
+    19  => "client_certificate_type",
+    20  => "server_certificate_type",
+    21  => "padding", # temporary till 2015-03-12
+    22  => "encrypt_then_mac", # temporary till 2015-06-05
+    35  => "SessionTicket TLS",
+    40  => "extended_random",
+    13172 => "next_protocol_negotiation",
+    13175 => "origin_bound_certificates",
+    13180 => "encrypted_client_certificates",
+    30031 => "channel_id",
+    30032 => "channel_id_new",
+    35655 => "padding",
+    65281 => "renegotiation_info"
+);
 
 // Known SSL and TLS suites
 $suitesData = <<< END_OF_DATA
@@ -368,7 +372,6 @@ foreach($suiteLines as $suiteLine) {
     }
 }
 
-
 ob_end_flush();
 ob_implicit_flush(true);
 
@@ -453,8 +456,9 @@ if (trim($resp["ssl_raw_sig"]) != "") {
         return array_key_exists($cipher, $cipherDatabase) ? $cipherDatabase[$cipher] : $cipher;
     }, explode(",", $ciphers)));
 
-    $extensions = implode("<br/>",array_map(function($extension) use ($extensionDatabase) {
-        return array_key_exists($extension, $extensionDatabase) ? $extensionDatabase[$extension] : $extension;
+    $extensions = implode("<br/>",array_map(function($extension) use ($tlsExtensions) {
+        $extension = hexdec($extension);
+        return array_key_exists($extension, $tlsExtensions) ? $tlsExtensions[$extension] : $extension;
     }, explode(",", $extensions)));
 
     ?>
