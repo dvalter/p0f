@@ -1,6 +1,21 @@
 <?php
+$SOCKET = '/var/run/p0f.sock';
+$QUERY_IP = array_key_exists('ip', $_REQUEST) ? $_REQUEST['ip'] : $_SERVER['REMOTE_ADDR'];
+?>
+<html>
+<body>
+    <form method="GET">
+        IP: <input name="ip" value="<?=$QUERY_IP?>">
+        <input type="submit">
+    </form>
+<?php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
+
+
+define("P0F_STATUS_BADQUERY", 0x00);
+define("P0F_STATUS_OK",       0x10);
+define("P0F_STATUS_NOMATCH",  0x20);
 
 $extensionsData = <<< END_OF_DATA
 0000,server_name
@@ -357,7 +372,7 @@ foreach($suiteLines as $suiteLine) {
 ob_end_flush();
 ob_implicit_flush(true);
 
-$fd = fsockopen("unix:///var/run/p0f.sock");
+$fd = fsockopen("unix://" . $SOCKET);
 
 /*
  * Queries have exactly 21 bytes. The format is:
@@ -373,7 +388,7 @@ $fd = fsockopen("unix:///var/run/p0f.sock");
 $query = pack("LCNNNN",
     0x50304601,
     4, /* IPv4 */
-    ip2long($_SERVER['REMOTE_ADDR']),
+    ip2long($QUERY_IP),
     0,
     0,
     0
@@ -412,6 +427,13 @@ foreach(array('os_name', 'os_flavor', 'http_name', 'http_flavor', 'link_type', '
     $resp[$field] = trim($resp[$field]);
 }
 
+if($resp["status"] == P0F_STATUS_BADQUERY) {
+    echo "bad query";
+    exit;
+} elseif ($resp["status"] == P0F_STATUS_NOMATCH) {
+    echo "no match";
+    exit;
+}
 ?>
 <h2>Fingerprint Match</h2>
 <table border="1">
