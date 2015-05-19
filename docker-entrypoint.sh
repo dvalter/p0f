@@ -13,6 +13,10 @@ if [ "$1" == "/usr/bin/supervisord" ]; then
 	POF_OPTS+=" -t ${CONNECTION_HOST_CACHE_LIMIT}"
 	POF_OPTS+=" -m ${CONNECTION_HOST_CAP_LIMIT}"
 
+	if [ ! -z "${VERBOSE}" ]; then
+		POF_OPTS+=" -v"
+	fi
+
 	if [ ! -z "${INTERFACE}" ]; then
 		POF_OPTS+=" -i ${INTERFACE}"
 	fi
