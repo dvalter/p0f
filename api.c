@@ -94,12 +94,19 @@ void handle_query(struct p0f_api_query* q, struct p0f_api_response* r) {
   if (h->language)
     strncpy((char*)r->language, (char*)h->language, P0F_STR_MAX + 1);
 
-  r->bad_sw      = h->bad_sw;
-  r->last_nat    = h->last_nat;
-  r->last_chg    = h->last_chg;
-  r->up_mod_days = h->up_mod_days;
-  r->distance    = h->distance;
-  r->os_match_q  = h->last_quality;
+  r->bad_sw           = h->bad_sw;
+  r->last_nat         = h->last_nat;
+  r->last_chg         = h->last_chg;
+  r->up_mod_days      = h->up_mod_days;
+  r->distance         = h->distance;
+  r->os_match_q       = h->last_quality;
+
+  r->ssl_remote_time  = h->ssl_remote_time;
+  r->ssl_recv_time    = h->ssl_recv_time;
+
+  if (h->ssl_raw_sig)
+    strncpy((char*)r->ssl_raw_sig, (char*)h->ssl_raw_sig, HTTP_MAX_SHOW + 1);
+
 
   if (h->last_up_min != -1) r->uptime_min = h->last_up_min;
 
