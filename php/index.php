@@ -67,6 +67,7 @@ $resp = unpack(
     "a32http_flavor/" .   // Flavor of detected HTTP app
     "a32link_type/" .     // Link type
     "a32language/" .      // Language
+    "a" . (HTTP_MAX_SHOW + 1) . "http_raw_sig/" .    // http raw signature
     "Lssl_remote_time/" . // Last client timestamp from SSL
     "Lssl_recv_time/" .    // Language
     "a" . (HTTP_MAX_SHOW + 1) . "ssl_raw_sig",    // ssl client handshake raw signature

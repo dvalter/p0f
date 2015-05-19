@@ -135,7 +135,9 @@ struct host_data {
 
   u16 http_resp_port;                   /* Port on which response seen        */
 
-  u8* ssl_raw_sig;
+  u8 http_raw_sig[HTTP_MAX_SHOW + 1];
+
+  u8 ssl_raw_sig[HTTP_MAX_SHOW + 1];
   u32 ssl_remote_time;                  /* Last client timestamp from SSL     */
   u32 ssl_recv_time;                    /* Time drift derived from SSL        */
 };

@@ -68,6 +68,8 @@ struct p0f_api_response {
 
   u8  language[P0F_STR_MAX + 1];        /* Language                           */
 
+  u8  http_raw_sig[HTTP_MAX_SHOW + 1 ];
+
   u32 ssl_remote_time;                  /* Last client timestamp from SSL     */
   u32 ssl_recv_time;                    /* Time drift derived from SSL        */
   u8  ssl_raw_sig[HTTP_MAX_SHOW + 1 ];

@@ -844,7 +844,6 @@ header_check:
 /* Look up HTTP signature, create an observation. */
 
 static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
-
   struct http_sig_record* m;
   u8* lang = NULL;
 
@@ -880,7 +879,12 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
 
   add_observation_field("params", dump_flags(&f->http_tmp, m));
 
-  add_observation_field("raw_sig", dump_sig(to_srv, &f->http_tmp));
+  u8* http_raw_sig = dump_sig(to_srv, &f->http_tmp);
+  add_observation_field("raw_sig", http_raw_sig);
+
+  if (to_srv) {
+    strncpy((char*)f->client->http_raw_sig, http_raw_sig, HTTP_MAX_SHOW + 1);
+  }
 
   score_nat(to_srv, f);
 

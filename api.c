@@ -101,6 +101,9 @@ void handle_query(struct p0f_api_query* q, struct p0f_api_response* r) {
   r->distance         = h->distance;
   r->os_match_q       = h->last_quality;
 
+  if (h->http_raw_sig)
+    strncpy((char*)r->http_raw_sig, (char*)h->http_raw_sig, HTTP_MAX_SHOW + 1);
+
   r->ssl_remote_time  = h->ssl_remote_time;
   r->ssl_recv_time    = h->ssl_recv_time;
 
