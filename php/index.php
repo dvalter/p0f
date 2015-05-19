@@ -84,10 +84,21 @@ if($resp["status"] == P0F_STATUS_BADQUERY) {
     echo "no match";
     exit;
 }
+
+unset($resp['magic']);
+unset($resp['status']);
+
 ?>
 <h2>Fingerprint Match</h2>
 <table border="1">
 <?php foreach ($resp as $key => $value) {
+    if(in_array($key, array('first_seen', 'last_seen', 'ssl_remote_time', 'ssl_recv_time'))) {
+        if($value == 0) {
+            $value = "";
+        } else {
+            $value = date("Y-m-d H:i:s", $value);
+        }
+    }
 ?>
     <tr><td><?=$key?></td><td><?=$value?></td></tr>
 
