@@ -1,7 +1,7 @@
 <?php
 require_once('p0f_constants.php');
 
-$SOCKET = '/var/run/p0f.sock';
+$SOCKET = '/opt/p0f/run/p0f.sock';
 $QUERY_IP = array_key_exists('ip', $_REQUEST) ? $_REQUEST['ip'] : $_SERVER['REMOTE_ADDR'];
 ?>
 <html>
