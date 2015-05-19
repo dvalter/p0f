@@ -380,7 +380,7 @@ $query = pack("LCNNNN",
 );
 
 fwrite($fd, $query);
-$r =  fgets($fd, 1024);
+$r =  fgets($fd, 442);
 fclose($fd);
 
 $resp = unpack(
@@ -407,6 +407,11 @@ $resp = unpack(
     "a201ssl_raw_sig",    // ssl client handshake raw signature
     $r
 );
+
+foreach(array('os_name', 'os_flavor', 'http_name', 'http_flavor', 'link_type', 'language', 'ssl_raw_sig') as $field) {
+    $resp[$field] = trim($resp[$field]);
+}
+
 ?>
 <h2>Fingerprint Match</h2>
 <table border="1">
@@ -419,7 +424,7 @@ $resp = unpack(
 ?>
 </table>
 <?php
-if ($resp["ssl_raw_sig"] != "") {
+if (trim($resp["ssl_raw_sig"]) != "") {
     list($sslver, $ciphers, $extensions, $sslflags) = explode(":", $resp['ssl_raw_sig']);
 
     $ciphers = implode("<br/>",array_map(function($cipher) use ($cipherDatabase) {
