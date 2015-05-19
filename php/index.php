@@ -1,4 +1,6 @@
 <?php
+require_once('p0f_constants.php');
+
 $SOCKET = '/var/run/p0f.sock';
 $QUERY_IP = array_key_exists('ip', $_REQUEST) ? $_REQUEST['ip'] : $_SERVER['REMOTE_ADDR'];
 ?>
@@ -13,9 +15,6 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 
-define("P0F_STATUS_BADQUERY", 0x00);
-define("P0F_STATUS_OK",       0x10);
-define("P0F_STATUS_NOMATCH",  0x20);
 
 $tlsExtensions          = require('tls_extensions.inc.php');
 $tlsCipherSuiteRegistry = require('tls_cipher_suite_registry.inc.php');
@@ -46,7 +45,7 @@ $query = pack("LCNNNN",
 );
 
 fwrite($fd, $query);
-$r =  fgets($fd, 442);
+$r =  fgets($fd, SIZEOF_P0F_API_RESPONSE);
 fclose($fd);
 
 $resp = unpack(
@@ -70,7 +69,7 @@ $resp = unpack(
     "a32language/" .      // Language
     "Lssl_remote_time/" . // Last client timestamp from SSL
     "Lssl_recv_time/" .    // Language
-    "a201ssl_raw_sig",    // ssl client handshake raw signature
+    "a" . (HTTP_MAX_SHOW + 1) . "ssl_raw_sig",    // ssl client handshake raw signature
     $r
 );
 

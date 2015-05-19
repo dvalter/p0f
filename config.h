@@ -181,7 +181,7 @@
 
 /* Maximum length of a header value for display purposes: */
 
-#define HTTP_MAX_SHOW       200
+#define HTTP_MAX_SHOW       300
 
 /* Maximum HTTP 'Date' progression jitter to overlook (s): */
 
