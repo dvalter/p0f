@@ -931,6 +931,7 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
     }
 
   } else {
+    f->client->http_req_port = f->cli_port;
 
     if (lang) f->client->language = lang;
 

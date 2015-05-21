@@ -133,6 +133,7 @@ struct host_data {
 
   u8  bad_sw;                           /* Used dishonest U-A or Server?      */
 
+  u16 http_req_port;                    /* Port on which response seen        */
   u16 http_resp_port;                   /* Port on which response seen        */
 
   u8 http_raw_sig[HTTP_MAX_SHOW + 1];
