@@ -1230,7 +1230,7 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
     u8* pay = f->request;
     u8 can_get_more = (f->req_len < MAX_FLOW_DATA);
     u32 off;
-    u32 off_proxyprotocol;
+    u32 off_proxyprotocol = 0;
     u8 i;
     u8 tmp[50];
 
@@ -1258,6 +1258,8 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
         off_proxyprotocol = 6;
 
         if(!strncmp((char*)pay, "TCP4 ", 5)) {
+          if (f->req_len < 56 /* max proxy header length for ipv4 */ + 15 /* min http header length */) return can_get_more;
+
           pay = pay + 5;
           off_proxyprotocol = off_proxyprotocol + 5;
 
