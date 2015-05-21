@@ -1230,6 +1230,8 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
     u8* pay = f->request;
     u8 can_get_more = (f->req_len < MAX_FLOW_DATA);
     u32 off;
+    u32 off_proxyprotocol;
+    u8  proxyprotocol_header[108];
 
     /* Request done, but pending response? */
 
@@ -1249,6 +1251,21 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
       off = f->http_pos;
 
       /* We only care about GET and HEAD requests at this point. */
+
+      if(!strncmp((char*)pay, "PROXY", 4)) {
+        DEBUG("[#] Found proxy protocol.\n");
+
+        //skip proxy header signature
+        while(off_proxyprotocol < sizeof(proxyprotocol_header) && (chr = pay[off_proxyprotocol]) != '\n') {
+          off_proxyprotocol++;
+        }
+        strncpy((char*)proxyprotocol_header, (char*)pay, off_proxyprotocol + 1);
+        proxyprotocol_header[off_proxyprotocol + 1] = '\0';
+
+        pay = pay + off_proxyprotocol + 1;
+
+        //printf("%s", proxyprotocol_header);
+      }
 
       if (!off && strncmp((char*)pay, "GET /", 5) &&
           strncmp((char*)pay, "HEAD /", 6)) {
@@ -1322,6 +1339,8 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
       DEBUG("[#] HTTP detected.\n");
 
     }
+
+    f->http_pos = f->http_pos + off_proxyprotocol;
 
     return parse_pairs(1, f, can_get_more);
 
