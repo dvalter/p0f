@@ -174,6 +174,9 @@ struct packet_flow {
   u16 cli_port;                         /* Client port                        */
   u16 srv_port;                         /* Server port                        */
 
+  u8  orig_cli_addr[16];                /* Originating Client Address         */
+  u16 orig_cli_port;                    /* Originating Client port            */
+
   u8  acked;                            /* SYN+ACK received?                  */
   u8  sendsyn;                          /* Created by p0f-sendsyn?            */
 

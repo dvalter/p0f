@@ -1264,15 +1264,15 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
           pay = pay + 5;
           off_proxyprotocol = off_proxyprotocol + 5;
 
-          DEBUG("[#] Found proxy protocol v1 TCP4\n");
-
           //parse source ip address
           memset(&tmp, 0, sizeof(tmp));
           i=0; while(i < sizeof(tmp) && (chr = pay[i]) != ' ') { tmp[i] = pay[i]; i++; }
           pay = pay + i + 1;
           off_proxyprotocol = off_proxyprotocol + i + 1;
-
-          DEBUG("Source IP: %s\n", tmp);
+          if (inet_pton(AF_INET, tmp, f->orig_cli_addr) <= 0) {
+            DEBUG("Could not parse destination address\n");
+            return 0;
+          }
 
           //parse destination ip address
           memset(&tmp, 0, sizeof(tmp));
@@ -1280,15 +1280,12 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
           pay = pay + i + 1;
           off_proxyprotocol = off_proxyprotocol + i + 1;
 
-          DEBUG("Dest IP: %s\n", tmp);
-
           //parse source port
           memset(&tmp, 0, sizeof(tmp));
           i=0; while(i < sizeof(tmp) && (chr = pay[i]) != ' ') { tmp[i] = pay[i]; i++; }
           pay = pay + i + 1;
           off_proxyprotocol = off_proxyprotocol + i + 1;
-
-          DEBUG("Source port: %s\n", tmp);
+          f->orig_cli_port = atoi(tmp);
 
           //parse destination port
           memset(&tmp, 0, sizeof(tmp));
@@ -1296,7 +1293,7 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
           pay = pay + i + 1;
           off_proxyprotocol = off_proxyprotocol + i + 1;
 
-          DEBUG("Destination port: %s\n", tmp);
+          DEBUG("[#] Found encapsulating proxy protocol v1 TCP4 originating from %s:%u\n", addr_to_str(f->orig_cli_addr, IP_VER4), f->orig_cli_port);
 
           //skip \n
           pay = pay + 1;
