@@ -1231,7 +1231,8 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
     u8 can_get_more = (f->req_len < MAX_FLOW_DATA);
     u32 off;
     u32 off_proxyprotocol;
-    u8  proxyprotocol_header[108];
+    u8 i;
+    u8 tmp[50];
 
     /* Request done, but pending response? */
 
@@ -1252,19 +1253,60 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
 
       /* We only care about GET and HEAD requests at this point. */
 
-      if(!strncmp((char*)pay, "PROXY", 4)) {
-        DEBUG("[#] Found proxy protocol.\n");
+      if(!strncmp((char*)pay, "PROXY ", 6)) {
+        pay = pay + 6;
+        off_proxyprotocol = 6;
 
-        //skip proxy header signature
-        while(off_proxyprotocol < sizeof(proxyprotocol_header) && (chr = pay[off_proxyprotocol]) != '\n') {
-          off_proxyprotocol++;
+        if(!strncmp((char*)pay, "TCP4 ", 5)) {
+          pay = pay + 5;
+          off_proxyprotocol = off_proxyprotocol + 5;
+
+          DEBUG("[#] Found proxy protocol v1 TCP4\n");
+
+          //parse source ip address
+          memset(&tmp, 0, sizeof(tmp));
+          i=0; while(i < sizeof(tmp) && (chr = pay[i]) != ' ') { tmp[i] = pay[i]; i++; }
+          pay = pay + i + 1;
+          off_proxyprotocol = off_proxyprotocol + i + 1;
+
+          DEBUG("Source IP: %s\n", tmp);
+
+          //parse destination ip address
+          memset(&tmp, 0, sizeof(tmp));
+          i=0; while(i < sizeof(tmp) && (chr = pay[i]) != ' ') { tmp[i] = pay[i]; i++; }
+          pay = pay + i + 1;
+          off_proxyprotocol = off_proxyprotocol + i + 1;
+
+          DEBUG("Dest IP: %s\n", tmp);
+
+          //parse source port
+          memset(&tmp, 0, sizeof(tmp));
+          i=0; while(i < sizeof(tmp) && (chr = pay[i]) != ' ') { tmp[i] = pay[i]; i++; }
+          pay = pay + i + 1;
+          off_proxyprotocol = off_proxyprotocol + i + 1;
+
+          DEBUG("Source port: %s\n", tmp);
+
+          //parse destination port
+          memset(&tmp, 0, sizeof(tmp));
+          i=0; while(i < sizeof(tmp) && (chr = pay[i]) != '\r') { tmp[i] = pay[i]; i++; }
+          pay = pay + i + 1;
+          off_proxyprotocol = off_proxyprotocol + i + 1;
+
+          DEBUG("Destination port: %s\n", tmp);
+
+          //skip \n
+          pay = pay + 1;
+          off_proxyprotocol = off_proxyprotocol + 1;
+
+        } else if(!strncmp((char*)pay, "TCP6 ", 5)) {
+          DEBUG("[#] Found proxy protocol v1 TCP6 which is not unsupported\n");
+          return 0;
+
+        } else {
+          DEBUG("[#] Missing TCP4, TCP6 specification for proxy protocol.\n");
+          return 0;
         }
-        strncpy((char*)proxyprotocol_header, (char*)pay, off_proxyprotocol + 1);
-        proxyprotocol_header[off_proxyprotocol + 1] = '\0';
-
-        pay = pay + off_proxyprotocol + 1;
-
-        //printf("%s", proxyprotocol_header);
       }
 
       if (!off && strncmp((char*)pay, "GET /", 5) &&
