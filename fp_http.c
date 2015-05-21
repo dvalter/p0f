@@ -882,10 +882,6 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
   u8* http_raw_sig = dump_sig(to_srv, &f->http_tmp);
   add_observation_field("raw_sig", http_raw_sig);
 
-  if (to_srv) {
-    strncpy((char*)f->client->http_raw_sig, http_raw_sig, HTTP_MAX_SHOW + 1);
-  }
-
   score_nat(to_srv, f);
 
   /* Save observations needed to score future responses. */
@@ -931,9 +927,29 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
     }
 
   } else {
-    f->client->http_req_port = f->cli_port;
+    struct host_data* client;
 
-    if (lang) f->client->language = lang;
+
+    if(!f->orig_cli_port) {
+      client = f->client;
+      client->http_req_port = f->cli_port;
+
+    } else {
+      client = lookup_host(f->orig_cli_addr, IP_VER4);
+
+      if(!client) {
+        DEBUG("[#] Could not find real client: %s:%u\n", addr_to_str(f->orig_cli_addr, IP_VER4), f->orig_cli_port);
+        client = f->client;
+      } else {
+        DEBUG("[#] Attributing http findings to real client: %s:%u\n", addr_to_str(f->orig_cli_addr, IP_VER4), f->orig_cli_port);
+      }
+
+      client->http_req_port = f->orig_cli_port;
+  }
+
+    strncpy((char*)client->http_raw_sig, http_raw_sig, HTTP_MAX_SHOW + 1);
+
+    if (lang) client->language = lang;
 
     if (m) {
 
@@ -941,29 +957,29 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
 
         /* Client request - only OS sig is of any note. */
 
-        ck_free(f->client->http_req_os);
-        f->client->http_req_os = ck_memdup(&f->http_tmp,
+        ck_free(client->http_req_os);
+        client->http_req_os = ck_memdup(&f->http_tmp,
           sizeof(struct http_sig));
 
-        f->client->http_req_os->hdr_cnt = 0;
-        f->client->http_req_os->sw   = NULL;
-        f->client->http_req_os->lang = NULL;
-        f->client->http_req_os->via  = NULL;
+        client->http_req_os->hdr_cnt = 0;
+        client->http_req_os->sw   = NULL;
+        client->http_req_os->lang = NULL;
+        client->http_req_os->via  = NULL;
 
-        f->client->last_class_id = m->class_id;
-        f->client->last_name_id  = m->name_id;
-        f->client->last_flavor   = m->flavor;
+        client->last_class_id = m->class_id;
+        client->last_name_id  = m->name_id;
+        client->last_flavor   = m->flavor;
 
-        f->client->last_quality  = (m->generic * P0F_MATCH_GENERIC);
+        client->last_quality  = (m->generic * P0F_MATCH_GENERIC);
 
       } else {
 
         /* Record app data for the API. */
 
-        f->client->http_name_id = m->name_id;
-        f->client->http_flavor  = m->flavor;
+        client->http_name_id = m->name_id;
+        client->http_flavor  = m->flavor;
 
-        if (f->http_tmp.dishonest) f->client->bad_sw = 2;
+        if (f->http_tmp.dishonest) client->bad_sw = 2;
 
       }
  
