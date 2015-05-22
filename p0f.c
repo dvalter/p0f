@@ -68,9 +68,10 @@ static u8 *use_iface,                   /* Interface to listen on             */
           *orig_rule,                   /* Original filter rule               */
           *switch_user,                 /* Target username                    */
           *log_file,                    /* Binary log file name               */
-          *api_sock,                    /* API socket file name               */
           *fp_file,                     /* Location of p0f.fp                 */
           *read_file;                   /* File to read pcap data from        */
+
+static u16 api_port;                    /* TCP Port of the API */
 
 static u32
   api_max_conn    = API_MAX_CONN;       /* Maximum number of API connections  */
@@ -132,9 +133,7 @@ static void usage(void) {
 "\n"
 "  -f file   - read fingerprint database from 'file' (%s)\n"
 "  -o file   - write information to the specified log file\n"
-#ifndef __CYGWIN__
-"  -s name   - answer to API queries at a named unix socket\n"
-#endif /* !__CYGWIN__ */
+"  -P port   - answer to API queries at the given TCP port\n"
 "  -u user   - switch to the specified unprivileged account and chroot\n"
 "  -d        - fork into background (requires -o or -s)\n"
 "  -v        - enable verbose output (only available if we run in foreground)\n"
@@ -260,39 +259,23 @@ static void open_api(void) {
   s32 old_umask;
   u32 i;
 
-  struct sockaddr_un u;
+  struct sockaddr_in u;
   struct stat st;
 
-  api_fd = socket(PF_UNIX, SOCK_STREAM, 0);
+  api_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-  if (api_fd < 0) PFATAL("socket(PF_UNIX) failed.");
+  if (api_fd < 0) PFATAL("socket(AF_INET) failed.");
 
   memset(&u, 0, sizeof(u));
-  u.sun_family = AF_UNIX;
-
-  if (strlen((char*)api_sock) >= sizeof(u.sun_path))
-    FATAL("API socket filename is too long for sockaddr_un (blame Unix).");
-
-  strcpy(u.sun_path, (char*)api_sock);
-
-  /* This is bad, but you can't do any better with standard unix socket
-     semantics today :-( */
-
-  if (!stat((char*)api_sock, &st) && !S_ISSOCK(st.st_mode))
-    FATAL("'%s' exists but is not a socket.", api_sock);
-
-  if (unlink((char*)api_sock) && errno != ENOENT)
-    PFATAL("unlink('%s') failed.", api_sock);
-
-  old_umask = umask(0777 ^ API_MODE);
+  u.sin_family = AF_INET;
+  u.sin_addr.s_addr = INADDR_ANY;
+  u.sin_port = htons(api_port);
 
   if (bind(api_fd, (struct sockaddr*)&u, sizeof(u)))
-    PFATAL("bind() on '%s' failed.", api_sock);
-  
-  umask(old_umask);
+    PFATAL("bind() on port %u failed.", api_port);
 
   if (listen(api_fd, api_max_conn))
-    PFATAL("listen() on '%s' failed.", api_sock);
+    PFATAL("listen() on port %u failed.", api_port);
 
   if (fcntl(api_fd, F_SETFL, O_NONBLOCK))
     PFATAL("fcntl() to set O_NONBLOCK on API listen socket fails.");
@@ -301,8 +284,8 @@ static void open_api(void) {
 
   for (i = 0; i < api_max_conn; i++) api_cl[i].fd = -1;
 
-  SAYF("[+] Listening on API socket '%s' (max %u clients).\n",
-       api_sock, api_max_conn);
+  SAYF("[+] Listening for API on port %u (max %u clients).\n",
+       api_port, api_max_conn);
 
 }
 
@@ -741,7 +724,7 @@ static u32 regen_pfds(struct pollfd* pfds, struct api_client** ctable) {
 
   DEBUG("[#] Recomputing pollfd data, pcap_fd = %d.\n", pfds[0].fd);
 
-  if (!api_sock) return 1;
+  if (!api_port) return 1;
 
   pfds[1].fd     = api_fd;
   pfds[1].events = (POLLIN | POLLERR | POLLHUP);
@@ -792,10 +775,10 @@ static void live_event_loop(void) {
 
   /* We need room for pcap, and possibly api_fd + api_clients. */
 
-  pfds = ck_alloc((1 + (api_sock ? (1 + api_max_conn) : 0)) *
+  pfds = ck_alloc((1 + (api_port ? (1 + api_max_conn) : 0)) *
                   sizeof(struct pollfd));
 
-  ctable = ck_alloc((1 + (api_sock ? (1 + api_max_conn) : 0)) *
+  ctable = ck_alloc((1 + (api_port ? (1 + api_max_conn) : 0)) *
                     sizeof(struct api_client*));
 
   pfd_count = regen_pfds(pfds, ctable);
@@ -900,7 +883,7 @@ poll_again:
 
           /* Accept new API connection, limits permitting. */
 
-          if (!api_sock) FATAL("Unexpected API connection.");
+          if (!api_port) FATAL("Unexpected API connection.");
 
           if (pfd_count - 2 < api_max_conn) {
 
@@ -1029,7 +1012,7 @@ int main(int argc, char** argv) {
   if (getuid() != geteuid())
     FATAL("Please don't make me setuid. See README for more.\n");
 
-  while ((r = getopt(argc, argv, "+LS:df:i:m:o:pr:s:t:u:v")) != -1) switch (r) {
+  while ((r = getopt(argc, argv, "+LS:df:i:m:o:pr:P:t:u:v")) != -1) switch (r) {
 
     case 'L':
 
@@ -1125,22 +1108,9 @@ int main(int argc, char** argv) {
 
       break;
 
-    case 's':
-
-#ifdef __CYGWIN__
-
-      FATAL("API mode not supported on Windows (see README).");
-
-#else
-
-      if (api_sock) 
-        FATAL("Multiple -s options not supported.");
-
-      api_sock = (u8*)optarg;
-
+    case 'P':
+      api_port = atoi(optarg);
       break;
-
-#endif /* ^__CYGWIN__ */
 
     case 't':
 
@@ -1174,19 +1144,19 @@ int main(int argc, char** argv) {
 
   }
 
-  if (read_file && api_sock)
-    FATAL("API mode looks down on ofline captures.");
+  if (read_file && api_port)
+    FATAL("API mode looks down on offline captures.");
 
-  if (!api_sock && api_max_conn != API_MAX_CONN)
-    FATAL("Option -S makes sense only with -s.");
+  if (!api_port && api_max_conn != API_MAX_CONN)
+    FATAL("Option -S makes sense only with -P.");
 
   if (daemon_mode) {
 
     if (read_file)
       FATAL("Daemon mode and offline captures don't mix.");
 
-    if (!log_file && !api_sock)
-      FATAL("Daemon mode requires -o or -s.");
+    if (!log_file && !api_port)
+      FATAL("Daemon mode requires -o or -P.");
 
 #ifdef __CYGWIN__
 
@@ -1217,7 +1187,7 @@ int main(int argc, char** argv) {
   prepare_bpf();
 
   if (log_file) open_log();
-  if (api_sock) open_api();
+  if (api_port) open_api();
   
   if (daemon_mode) {
     null_fd = open("/dev/null", O_RDONLY);

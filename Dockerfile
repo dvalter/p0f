@@ -21,7 +21,7 @@ ADD		. /usr/src/p0f
 
 RUN		cd /usr/src/p0f && \
 		make && \
-		mkdir -p /opt/p0f/bin /opt/p0f/etc /opt/p0f/log /opt/p0f/run && \
+		mkdir -p /opt/p0f/bin /opt/p0f/etc /opt/p0f/log && \
 		cp /usr/src/p0f/p0f /opt/p0f/bin && \
 		cp /usr/src/p0f/p0f.fp /opt/p0f/etc && \
 		rm /var/www/html/* && \

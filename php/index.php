@@ -1,7 +1,5 @@
 <?php
 require_once('p0f_constants.php');
-
-$SOCKET = '/opt/p0f/run/p0f.sock';
 $QUERY_IP = array_key_exists('ip', $_REQUEST) ? $_REQUEST['ip'] : $_SERVER['REMOTE_ADDR'];
 ?>
 <html>
@@ -14,15 +12,13 @@ $QUERY_IP = array_key_exists('ip', $_REQUEST) ? $_REQUEST['ip'] : $_SERVER['REMO
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-
-
 $tlsExtensions          = require('tls_extensions.inc.php');
 $tlsCipherSuiteRegistry = require('tls_cipher_suite_registry.inc.php');
 
 ob_end_flush();
 ob_implicit_flush(true);
 
-$fd = fsockopen("unix://" . $SOCKET);
+$fd = fsockopen("127.0.0.1", "1338");
 
 /*
  * Queries have exactly 21 bytes. The format is:
