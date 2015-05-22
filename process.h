@@ -131,8 +131,6 @@ struct host_data {
 
   u8* language;                         /* Detected language                  */
 
-  u8  bad_sw;                           /* Used dishonest U-A or Server?      */
-
   u16 http_req_port;                    /* Port on which response seen        */
   u16 http_resp_port;                   /* Port on which response seen        */
 

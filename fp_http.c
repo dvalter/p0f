@@ -787,14 +787,6 @@ static void score_nat(u8 to_srv, struct packet_flow* f) {
         DEBUG("[#] Otherwise plausible User-Agent points to another OS.\n");
         score  += 4;
         reason |= NAT_APP_UA;
-
-        if (!hd->bad_sw) hd->bad_sw = 1;
-
-      } else {
-
-        DEBUG("[#] User-Agent OS value checks out.\n");
-        hd->bad_sw = 0;
-
       }
 
     }
@@ -919,9 +911,6 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
 
         f->server->http_name_id = m->name_id;
         f->server->http_flavor  = m->flavor;
-
-        if (f->http_tmp.dishonest) f->server->bad_sw = 2;
-
       }
 
     }
@@ -978,9 +967,6 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
 
         client->http_name_id = m->name_id;
         client->http_flavor  = m->flavor;
-
-        if (f->http_tmp.dishonest) client->bad_sw = 2;
-
       }
  
     }
