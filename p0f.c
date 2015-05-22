@@ -271,6 +271,11 @@ static void open_api(void) {
   u.sin_addr.s_addr = INADDR_ANY;
   u.sin_port = htons(api_port);
 
+  u32 yes = 1;
+  if (setsockopt(api_fd, SOL_SOCKET, (SO_REUSEADDR | SO_REUSEPORT), &yes, sizeof(u32)) == -1) {
+      PFATAL("setsockopt() to set SO_REUSEADDR | SO_REUSEPORT on API listen socket fails.");
+  }
+
   if (bind(api_fd, (struct sockaddr*)&u, sizeof(u)))
     PFATAL("bind() on port %u failed.", api_port);
 
@@ -737,8 +742,8 @@ static u32 regen_pfds(struct pollfd* pfds, struct api_client** ctable) {
 
     /* If we haven't received a complete query yet, wait for POLLIN.
        Otherwise, we want to write stuff. */
-
-    if (api_cl[i].in_off < sizeof(struct p0f_api_query))
+//TODO: Check if header was already read
+    if (api_cl[i].in_off < HTTP_SERVER_INPUT_BUFFER_SIZE)
       pfds[count].events = (POLLIN | POLLERR | POLLHUP);
     else
       pfds[count].events = (POLLOUT | POLLERR | POLLHUP);
@@ -846,26 +851,29 @@ poll_again:
 
           /* Write API response, restart state when complete. */
 
-          if (ctable[cur]->in_off < sizeof(struct p0f_api_query))
-            FATAL("Inconsistent p0f_api_response state.\n");
-
-          i = write(pfds[cur].fd, 
+          i = write(pfds[cur].fd,
                    ((char*)&ctable[cur]->out_data) + ctable[cur]->out_off,
-                   sizeof(struct p0f_api_response) - ctable[cur]->out_off);
+                   ctable[cur]->out_length - ctable[cur]->out_off);
 
-          if (i <= 0) PFATAL("write() on API socket fails despite POLLOUT.");
+          if (i == -1) PFATAL("write() on API socket fails despite POLLOUT.");
+
+          DEBUG("%u bytes written to api socket\n", i);
 
           ctable[cur]->out_off += i;
 
           /* All done? Back to square zero then! */
+          if (ctable[cur]->out_off == ctable[cur]->out_length) {
+            ctable[cur]->in_off = ctable[cur]->out_off = 0;
+            pfds[cur].events   = (POLLIN | POLLERR | POLLHUP);
 
-          if (ctable[cur]->out_off == sizeof(struct p0f_api_response)) {
+            DEBUG("[#] Wrote all data to api connection, fd %d closed.\n", pfds[cur].fd);
 
-             ctable[cur]->in_off = ctable[cur]->out_off = 0;
-             pfds[cur].events   = (POLLIN | POLLERR | POLLHUP);
+            close(pfds[cur].fd);
+            ctable[cur]->fd = -1;
 
+            pfd_count = regen_pfds(pfds, ctable);
+            goto poll_again;
           }
-
       }
 
       if (pfds[cur].revents & POLLIN) switch (cur) {
@@ -919,25 +927,25 @@ poll_again:
 
           /* Receive API query, dispatch when complete. */
 
-          if (ctable[cur]->in_off >= sizeof(struct p0f_api_query))
+          if (ctable[cur]->in_off >= HTTP_SERVER_INPUT_BUFFER_SIZE)
             FATAL("Inconsistent p0f_api_query state.\n");
 
           i = read(pfds[cur].fd, 
                    ((char*)&ctable[cur]->in_data) + ctable[cur]->in_off,
-                   sizeof(struct p0f_api_query) - ctable[cur]->in_off);
+                   HTTP_SERVER_INPUT_BUFFER_SIZE - ctable[cur]->in_off);
 
           if (i < 0) PFATAL("read() on API socket fails despite POLLIN.");
 
           ctable[cur]->in_off += i;
 
           /* Query in place? Compute response and prepare to send it back. */
+//TODO: handle the case if we could not read the header with one read
+        //  if (ctable[cur]->in_off == HTTP_SERVER_INPUT_BUFFER_SIZE) {
 
-          if (ctable[cur]->in_off == sizeof(struct p0f_api_query)) {
-
-            handle_query(&ctable[cur]->in_data, &ctable[cur]->out_data);
+            ctable[cur]->out_length = handle_query(&ctable[cur]->in_data, &ctable[cur]->out_data);
             pfds[cur].events = (POLLOUT | POLLERR | POLLHUP);
 
-          }
+         // }
 
       }
 
