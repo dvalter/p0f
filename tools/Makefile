@@ -10,7 +10,7 @@
 CC      = gcc
 CFLAGS  = -g -ggdb -Wall -Wno-format -funsigned-char
 LDFLAGS =
-TARGETS = p0f-client p0f-sendsyn p0f-sendsyn6
+TARGETS = p0f-sendsyn p0f-sendsyn6
 
 all: $(TARGETS)
 
