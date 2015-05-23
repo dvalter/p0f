@@ -625,57 +625,6 @@ void ssl_register_sig(u8 to_srv, u8 generic, s32 sig_class, u32 sig_name,
 
 }
 
-static void score_nat(u8 to_srv, struct packet_flow* f, struct ssl_sig* sig) {
-
-  struct ssl_sig_record* m = sig->matched;
-  struct host_data* hd;
-
-  u8  score = 0;
-  u16 reason = 0;
-
-  /* Client request only. */
-  if (to_srv != 1) return;
-
-  hd = f->client;
-
-
-  if (m && m->class_id == -1) {
-
-    /* Application signature: we might look at the OS-es mentioned by
-       the signature, and make sure the OS from http and/or TCP
-       matches. */
-
-    verify_tool_class(to_srv, f, m->sys, m->sys_cnt);
-
-  }
-
-  if (hd->ssl_remote_time && sig->remote_time &&
-      (sig->flags & SSL_FLAG_RTIME) == 0) {
-
-    /* Time on the client should be increasing monotically */
-
-    s64 recv_diff    = ((s64)sig->recv_time) - hd->ssl_recv_time;
-    s64 remote_diff  = ((s64)sig->remote_time) - hd->ssl_remote_time;
-
-    if (remote_diff < recv_diff - SSL_MAX_TIME_DIFF ||
-        remote_diff > recv_diff + SSL_MAX_TIME_DIFF) {
-
-      DEBUG("[#] SSL gmt_unix_time distance too high (%lld in %lld sec).\n",
-            remote_diff, recv_diff);
-
-      score += 4;
-      reason |= NAT_APP_DATE;
-
-    }
-
-  }
-
-  add_nat_score(to_srv, f, reason, score);
-
-}
-
-
-
 /* Given an SSL client signature look it up and create an observation.  */
 
 static void fingerprint_ssl(u8 to_srv, struct packet_flow* f,
@@ -721,9 +670,6 @@ static void fingerprint_ssl(u8 to_srv, struct packet_flow* f,
   OBSERVF("remote_time", "%u", sig->remote_time);
 
   add_observation_field("raw_sig", dump_sig(sig, 1));
-
-  score_nat(to_srv, f, sig);
-
 }
 
 
