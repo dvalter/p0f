@@ -69,7 +69,7 @@ u8* append_json_string(u8* r, u8* key, u8* value) {
     return r;
 }
 
-u8 handle_query(u8* q, u8* r) {
+s32 handle_query(u8* q, u8* r) {
   u8 ip_ver;
   u8 cli_addr[16];
   struct host_data* h;
@@ -192,9 +192,13 @@ u8 handle_query(u8* q, u8* r) {
     r = append_json_u32     (r, "distance",         h->distance);
     r = append_json_u32     (r, "mtu",              h->mtu);
 
+    r = append_json_string  (r, "http_raw_sig",       &h->http_raw_sig);
+    r = append_json_string  (r, "ssl_raw_sig",        &h->ssl_raw_sig);
 
-  //  r = append_json_string(r, "http_raw_sig", h->http_raw_sig);
-
+    //remove last comma
+    r = r - 2;
+    *r = '\n';
+    r = r + 1;
 
     r = append(r, "}\n");
 

@@ -32,6 +32,6 @@ struct api_client {
 
 };
 
-u8 handle_query(u8* q, u8* r);
+s32 handle_query(u8* q, u8* r);
 
 #endif /* !_HAVE_API_H */
