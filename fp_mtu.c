@@ -63,7 +63,8 @@ void mtu_register_sig(u8* name, u8* val, u32 line_no) {
 
 void fingerprint_mtu(u8 to_srv, struct packet_data* pk, struct packet_flow* f) {
 
-  u32 bucket, i, mtu;
+  u32 bucket, i;
+  u16 mtu;
 
   if (!pk->mss || f->sendsyn) return;
 
@@ -82,8 +83,14 @@ void fingerprint_mtu(u8 to_srv, struct packet_data* pk, struct packet_flow* f) {
 
     add_observation_field("link", sigs[bucket][i].name);
 
-    if (to_srv) f->client->link_type = sigs[bucket][i].name;
-    else f->server->link_type = sigs[bucket][i].name;
+    if (to_srv) {
+      f->client->mtu = mtu;
+      f->client->link_type = sigs[bucket][i].name;
+    }
+    else {
+      f->server->mtu = mtu;
+      f->server->link_type = sigs[bucket][i].name;
+    }
 
   }
 

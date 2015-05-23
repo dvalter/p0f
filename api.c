@@ -38,20 +38,8 @@ u8* append(u8* r, u8* input) {
       return r + strlen(input);
 }
 
-
-u8* append_json_u8(u8* r, u8* key, u8 value) {
-  u8 string_value[sizeof(u8)*8+1];
-  sprintf(string_value, "%u", value);
-  r = append(r, "  \"");
-  r = append(r, key);
-  r = append(r, "\": ");
-  r = append(r, string_value);
-  r = append(r, ",\n");
-  return r;
-}
-
 u8* append_json_u32(u8* r, u8* key, u32 value) {
-  u8 string_value[sizeof(u32)*8+1];
+  u8 string_value[11];
   sprintf(string_value, "%u", value);
   r = append(r, "  \"");
   r = append(r, key);
@@ -62,7 +50,7 @@ u8* append_json_u32(u8* r, u8* key, u32 value) {
 }
 
 u8* append_json_s32(u8* r, u8* key, s32 value) {
-  u8 string_value[sizeof(s32)*8+1];
+  u8 string_value[12];
   sprintf(string_value, "%d", value);
   r = append(r, "  \"");
   r = append(r, key);
@@ -189,7 +177,7 @@ u8 handle_query(u8* q, u8* r) {
     r = append(r, http_200_response);
     r = append(r, "{\n");
 
-    r = append_json_u8      (r, "ip_version",       ip_ver);
+    r = append_json_u32     (r, "ip_version",       ip_ver);
     r = append_json_string  (r, "ip",               addr_to_str(cli_addr, ip_ver));
 
     r = append_json_s32     (r, "uptime_minutes",   h->last_up_min);
@@ -201,7 +189,10 @@ u8 handle_query(u8* q, u8* r) {
     r = append_json_u32     (r, "last_seen",        h->last_seen);
     r = append_json_u32     (r, "total_conn",       h->total_conn);
 
-    r = append_json_u8    (r, "distance",     h->distance);
+    r = append_json_u32     (r, "distance",         h->distance);
+    r = append_json_u32     (r, "mtu",              h->mtu);
+
+
   //  r = append_json_string(r, "http_raw_sig", h->http_raw_sig);
 
 
