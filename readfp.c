@@ -367,12 +367,6 @@ static void config_parse_line(u8* line) {
         http_register_sig(mod_to_srv, generic, sig_class, sig_name, sig_flavor,
                           label_id, cur_sys, cur_sys_cnt, val, line_no);
         break;
-
-      case CF_MOD_SSL:
-        ssl_register_sig(mod_to_srv, generic, sig_class, sig_name, sig_flavor,
-                         label_id, cur_sys, cur_sys_cnt, val, line_no);
-        break;
-
     }
 
     sig_cnt++;
