@@ -34,23 +34,6 @@
                                   most likely time since reboot for old ff */
 #define SSL_FLAG_COMPR 0x0010  /* Deflate compression support. */
 
-
-/* SSLv2 */
-
-struct ssl2_hdr {
-
-  u16 msg_length;
-  u8 msg_type;
-  u8 ver_maj;
-  u8 ver_min;
-
-  u16 cipher_spec_length;
-  u16 session_id_length;
-  u16 challenge_length;
-
-} __attribute__((packed));
-
-
 /* SSLv3 */
 
 #define SSL3_REC_HANDSHAKE 0x16    /* 22 */

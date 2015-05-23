@@ -237,98 +237,6 @@ static void ssl_find_match(struct ssl_sig* ts) {
 
 }
 
-
-/* Unpack SSLv2 header to a signature. 
-   -1 on parsing error, 1 if signature was extracted. */
-
-static int fingerprint_ssl_v2(struct ssl_sig* sig, const u8* pay, u32 pay_len) {
-
-  const u8* pay_end = pay + pay_len;
-  const u8* tmp_end;
-
-  if (pay + sizeof(struct ssl2_hdr) > pay_end) goto too_short;
-
-  struct ssl2_hdr* hdr = (struct ssl2_hdr*)pay;
-  pay += sizeof(struct ssl2_hdr);
-
-  if (hdr->ver_min == 2 && hdr->ver_maj == 0) {
-
-    /* SSLv2 is actually 0x0002 on the wire. */
-    sig->request_version = 0x0200;
-
-  } else {
-
-    /* Most often - SSLv2 header has request version set to 3.x */
-    sig->request_version = (hdr->ver_maj << 8) | hdr->ver_min;
-
-  }
-
-
-  u16 cipher_spec_len = ntohs(hdr->cipher_spec_length);
-
-  if (cipher_spec_len % 3) {
-
-    DEBUG("[#] SSLv2 cipher_spec_len=%u is not divisable by 3.\n",
-          cipher_spec_len);
-    return -1;
-
-  }
-
-  if (pay + cipher_spec_len > pay_end) goto too_short;
-
-  int cipher_pos = 0;
-  sig->cipher_suites = ck_alloc(((cipher_spec_len / 3) + 1) * sizeof(u32));
-  tmp_end = pay + cipher_spec_len;
-
-  while (pay < tmp_end) {
-
-    sig->cipher_suites[cipher_pos++] =
-      (pay[0] << 16) | (pay[1] << 8) | pay[2];
-    pay += 3;
-
-  }
-  sig->cipher_suites[cipher_pos] = END_MARKER;
-
-
-  u16 session_id_len = ntohs(hdr->session_id_length);
-  u16 challenge_len = ntohs(hdr->challenge_length);
-
-  if (pay + session_id_len + challenge_len > pay_end) {
-
-    DEBUG("[#] SSLv2 frame truncated (but valid)\n");
-    goto truncated;
-
-  }
-
-  pay += session_id_len + challenge_len;
-
-  if (pay != pay_end) {
-
-    DEBUG("[#] SSLv2 extra %u bytes remaining after client-hello message.\n",
-          pay_end - pay);
-
-  }
-
-truncated:
-
-  sig->extensions = ck_alloc(1 * sizeof(u32));
-  sig->extensions[0] = END_MARKER;
-
-  return 1;
-
-
-too_short:
-
-  DEBUG("[#] SSLv2 frame too short.\n");
-
-  ck_free(sig->cipher_suites);
-  ck_free(sig->extensions);
-
-  return -1;
-
-}
-
-
 /* Unpack SSLv3 fragment to a signature. We expect to hear ClientHello
  message.  -1 on parsing error, 1 if signature was extracted. */
 
@@ -848,42 +756,15 @@ u8 process_ssl(u8 to_srv, struct packet_flow* f) {
 
   if (f->req_len < 6) return can_get_more;
 
-  struct ssl2_hdr* hdr2 = (struct ssl2_hdr*)f->request;
-  u16 msg_length = ntohs(hdr2->msg_length);
-
   struct ssl3_record_hdr* hdr3 = (struct ssl3_record_hdr*)f->request;
   u16 fragment_len = ntohs(hdr3->length);
-
-
-  /* Does it look like top 5 bytes of SSLv2? Most significant bit must
-     be set, followed by 15 bits indicating record length, which must
-     be at least 9. */
-
-  if ((msg_length & 0x8000) &&
-      (msg_length & ~0x8000) >= sizeof(struct ssl2_hdr) - 2 &&
-      hdr2->msg_type == 1 &&
-      ((hdr2->ver_maj == 3 && hdr2->ver_min < 4) ||
-       (hdr2->ver_min == 2 && hdr2->ver_maj == 0))) {
-
-    /* Clear top bit. */
-    msg_length &= ~0x8000;
-
-    if (f->req_len < 2 + msg_length) return can_get_more;
-
-    memset(&sig, 0, sizeof(struct ssl_sig));
-    sig.flags |= SSL_FLAG_V2;
-
-    success = fingerprint_ssl_v2(&sig, f->request, msg_length + 2);
-
-  }
-
 
   /* Top 5 bytes of SSLv3/TLS header? Currently available TLS
      versions: 3.0 - 3.3. The rfc disallows fragment to have more than
      2^14 bytes. Also length less than 4 bytes doesn't make much
      sense. Additionally let's peek the meesage type. */
 
-  else if (hdr3->content_type == SSL3_REC_HANDSHAKE &&
+   if (hdr3->content_type == SSL3_REC_HANDSHAKE &&
            hdr3->ver_maj == 3 && hdr3->ver_min < 4 &&
            fragment_len > 3 && fragment_len < (1 << 14) &&
            f->request[5] == SSL3_MSG_CLIENT_HELLO) {
@@ -904,7 +785,7 @@ u8 process_ssl(u8 to_srv, struct packet_flow* f) {
 
   if (success != 1) {
 
-    DEBUG("[#] Does not look like SSLv2 nor SSLv3.\n");
+    DEBUG("[#] Does not look like SSLv3.\n");
 
     f->in_ssl = -1;
     return 0;
