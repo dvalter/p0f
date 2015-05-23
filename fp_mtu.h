@@ -18,6 +18,6 @@
 struct packet_data;
 struct packet_flow;
 
-void fingerprint_mtu(u8 to_srv, struct packet_data* pk, struct packet_flow* f);
+void extract_mtu(u8 to_srv, struct packet_data* pk, struct packet_flow* f);
 
 #endif /* _HAVE_FP_MTU_H */

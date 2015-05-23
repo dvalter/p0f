@@ -1195,7 +1195,7 @@ static void flow_dispatch(struct packet_data* pk) {
 
       }
 
-      fingerprint_mtu(1, pk, f);
+      extract_mtu(1, pk, f);
       check_ts_tcp(1, pk, f);
 
       if (tsig) {
@@ -1260,7 +1260,7 @@ static void flow_dispatch(struct packet_data* pk) {
 
       }
 
-      fingerprint_mtu(0, pk, f);
+      extract_mtu(0, pk, f);
       check_ts_tcp(0, pk, f);
 
       ck_free(f->server->last_synack);

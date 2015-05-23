@@ -27,7 +27,7 @@
 
 #include "fp_mtu.h"
 
-void fingerprint_mtu(u8 to_srv, struct packet_data* pk, struct packet_flow* f) {
+void extract_mtu(u8 to_srv, struct packet_data* pk, struct packet_flow* f) {
   u16 mtu;
 
   start_observation("mtu", 2, to_srv, f);

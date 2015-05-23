@@ -13,7 +13,7 @@ VERSION="3.08b"
 
 test "$CC" = "" && CC="gcc"
 
-BASIC_CFLAGS="-Wall -Wno-format -I/usr/local/include/ \
+BASIC_CFLAGS="-w -I/usr/local/include/ \
               -I/opt/local/include/ -DVERSION=\"$VERSION\" $CFLAGS"
 
 BASIC_LDFLAGS="-L/usr/local/lib/ -L/opt/local/lib $LDFLAGS"
@@ -98,18 +98,6 @@ else
 fi
 
 rm -f COMPILER-WARNINGS 2>/dev/null
-
-echo -n "[*] Checking for a sane build environment... "
-
-if ls -ld ./ | grep -q '^d.......w'; then
-
-  echo "FAIL (bad permissions)"
-  echo
-  echo "Duuude, don't build stuff in world-writable directories."
-  echo
-  exit 1
-
-fi
 
 TMP=".build-$$"
 
