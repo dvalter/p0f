@@ -78,24 +78,6 @@ struct ssl_sig {
   struct ssl_sig_record* matched; /* NULL = no match */
 };
 
-struct ssl_sig_record {
-
-  s32 class_id;                         /* OS class ID (-1 = user)            */
-  s32 name_id;                          /* OS name ID                         */
-  u8* flavor;                           /* Human-readable flavor string       */
-
-  u32 label_id;                         /* Signature label ID                 */
-
-  u32* sys;                             /* OS class / name IDs for user apps  */
-  u32  sys_cnt;                         /* Length of sys                      */
-
-  u32  line_no;                         /* Line number in p0f.fp              */
-
-  u8 generic;                           /* Generic signature?                 */
-
-  struct ssl_sig* sig;                  /* Actual signature data              */
-
-};
 
 u8 process_ssl(u8 to_srv, struct packet_flow* f);
 
