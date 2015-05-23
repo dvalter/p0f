@@ -1468,11 +1468,6 @@ void add_nat_score(u8 to_srv, struct packet_flow* f, u16 reason, u8 score) {
   if (reason & NAT_MSS)      REAF(" mtu");
   if (reason & NAT_FUZZY)    REAF(" fuzzy");
 
-  if (reason & NAT_APP_VIA)  REAF(" via");
-  if (reason & NAT_APP_DATE) REAF(" date");
-  if (reason & NAT_APP_LB)   REAF(" srv_sig_lb");
-  if (reason & NAT_APP_UA)   REAF(" ua_vs_os");
-
 #undef REAF
 
   add_observation_field("reason", rea[0] ? (rea + 1) : NULL);

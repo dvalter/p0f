@@ -153,11 +153,6 @@ struct host_data {
 #define NAT_FUZZY            0x0080     /* Signature fuzziness changes        */
 #define NAT_MSS              0x0100     /* MSS changes                        */
 
-#define NAT_APP_LB           0x0200     /* Server signature changes           */
-#define NAT_APP_VIA          0x0400     /* Via / X-Forwarded-For seen         */
-#define NAT_APP_DATE         0x0800     /* Date changes in a weird way        */
-#define NAT_APP_UA           0x1000     /* User-Agent OS inconsistency        */
-
 /* TCP flow record, maintained until all fingerprinting modules are happy: */
 
 struct packet_flow {
