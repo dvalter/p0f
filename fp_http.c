@@ -156,133 +156,6 @@ void http_init(void) {
 
 }
 
-
-/* Find match for a signature. */
-
-static void http_find_match(u8 to_srv, struct http_sig* ts, u8 dupe_det) {
-
-  struct http_sig_record* gmatch = NULL;
-  struct http_sig_record* ref = sigs[to_srv];
-  u32 cnt = sig_cnt[to_srv];
-
-  while (cnt--) {
-
-    struct http_sig* rs = ref->sig;
-    u32 ts_hdr = 0, rs_hdr = 0;
-
-    if (rs->http_ver != -1 && rs->http_ver != ts->http_ver) goto next_sig;
-
-    /* Check that all the headers listed for the p0f.fp signature (probably)
-       appear in the examined traffic. */
-
-    if ((ts->hdr_bloom4 & rs->hdr_bloom4) != rs->hdr_bloom4) goto next_sig;
-
-    /* Confirm the ordering and values of headers (this is relatively
-       slow, hence the Bloom filter first). */
-
-    while (rs_hdr < rs->hdr_cnt) {
-
-      u32 orig_ts = ts_hdr;
-
-      while (rs->hdr[rs_hdr].id != ts->hdr[ts_hdr].id &&
-             ts_hdr < ts->hdr_cnt) ts_hdr++;
-
-      if (ts_hdr == ts->hdr_cnt) {
-
-        if (!rs->hdr[rs_hdr].optional) goto next_sig;
-
-        /* If this is an optional header, check that it doesn't appear
-           anywhere else. */
-
-        for (ts_hdr = 0; ts_hdr < ts->hdr_cnt; ts_hdr++)
-          if (rs->hdr[rs_hdr].id == ts->hdr[ts_hdr].id) goto next_sig;
-
-        ts_hdr = orig_ts;
-        rs_hdr++;
-        continue;
-
-      }
-
-      if (rs->hdr[rs_hdr].value &&
-          (!ts->hdr[ts_hdr].value ||
-          !strstr((char*)ts->hdr[ts_hdr].value,
-          (char*)rs->hdr[rs_hdr].value))) goto next_sig;
-
-      ts_hdr++;
-      rs_hdr++;
-
-    }
-
-    /* Check that the headers forbidden in p0f.fp don't appear in the traffic.
-       We first check if they seem to appear in ts->hdr_bloom4, and only if so,
-       we do a full check. */
-
-    for (rs_hdr = 0; rs_hdr < rs->miss_cnt; rs_hdr++) {
-
-      u64 miss_bloom4 = bloom4_64(rs->miss[rs_hdr]);
-
-      if ((ts->hdr_bloom4 & miss_bloom4) != miss_bloom4) continue;
-
-      /* Okay, possible instance of a banned header - scan list... */
-
-      for (ts_hdr = 0; ts_hdr < ts->hdr_cnt; ts_hdr++)
-        if (rs->miss[rs_hdr] == ts->hdr[ts_hdr].id) goto next_sig;
-
-    }
-
-    /* When doing dupe detection, we want to allow a signature with additional
-       banned headers to precede one with fewer, or with a different set. */
-
-    if (dupe_det) {
-
-      if (rs->miss_cnt > ts->miss_cnt) goto next_sig;
-
-      for (rs_hdr = 0; rs_hdr < rs->miss_cnt; rs_hdr++) {
-
-        for (ts_hdr = 0; ts_hdr < ts->miss_cnt; ts_hdr++) 
-          if (rs->miss[rs_hdr] == ts->miss[ts_hdr]) break;
-
-        /* One of the reference headers doesn't appear in current sig! */
-
-        if (ts_hdr == ts->miss_cnt) goto next_sig;
-
-      }
-
-
-    }
-
-    /* Whoa, a match. */
-
-    if (!ref->generic) {
-
-      ts->matched = ref;
-
-      if (rs->sw && ts->sw && !strstr((char*)ts->sw, (char*)rs->sw))
-        ts->dishonest = 1;
-
-      return;
-
-    } else if (!gmatch) gmatch = ref;
-
-next_sig:
-
-    ref = ref + 1;
-
-  }
-
-  /* A generic signature is the best we could find. */
-
-  if (!dupe_det && gmatch) {
-
-    ts->matched = gmatch;
-
-    if (gmatch->sig->sw && ts->sw && !strstr((char*)ts->sw,
-        (char*)gmatch->sig->sw)) ts->dishonest = 1;
-
-  }
-
-}
-
 /* Register new HTTP signature. */
 
 void http_parse_ua(u8* val, u32 line_no) {
@@ -505,20 +378,11 @@ static u8* dump_flags(struct http_sig* hsig, struct http_sig_record* m) {
 /* Look up HTTP signature, create an observation. */
 
 static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
-  struct http_sig_record* m;
   u8* lang = NULL;
-
-  http_find_match(to_srv, &f->http_tmp, 0);
 
   start_observation(to_srv ? "http request" : "http response", 4, to_srv, f);
 
-  if ((m = f->http_tmp.matched)) {
-
-    OBSERVF((m->class_id < 0) ? "app" : "os", "%s%s%s",
-            fp_os_names[m->name_id], m->flavor ? " " : "",
-            m->flavor ? m->flavor : (u8*)"");
-
-  } else add_observation_field("app", NULL);
+  add_observation_field("app", NULL);
 
   if (f->http_tmp.lang && isalpha(f->http_tmp.lang[0]) &&
       isalpha(f->http_tmp.lang[1]) && !isalpha(f->http_tmp.lang[2])) {
@@ -538,7 +402,7 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
 
   } else add_observation_field("lang", (u8*)"none");
 
-  add_observation_field("params", dump_flags(&f->http_tmp, m));
+  add_observation_field("params", NULL);
 
   u8* http_raw_sig = dump_sig(to_srv, &f->http_tmp);
   add_observation_field("raw_sig", http_raw_sig);
@@ -560,28 +424,6 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
     f->server->http_resp_port = f->srv_port;
 
     if (lang) f->server->language = lang;
-
-    if (m) {
-
-      if (m->class_id != -1) {
-
-        /* If this is an OS signature, update host record. */
-
-        f->server->last_class_id = m->class_id;
-        f->server->last_name_id  = m->name_id;
-        f->server->last_flavor   = m->flavor;
-        f->server->last_quality  = (m->generic * P0F_MATCH_GENERIC);
-
-      } else {
-
-        /* Otherwise, record app data. */
-
-        f->server->http_name_id = m->name_id;
-        f->server->http_flavor  = m->flavor;
-      }
-
-    }
-
   } else {
     struct host_data* client;
 
@@ -607,38 +449,6 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
     client->http_raw_sig[strlen(http_raw_sig) + 1] = '\0';
 
     if (lang) client->language = lang;
-
-    if (m) {
-
-      if (m->class_id != -1) {
-
-        /* Client request - only OS sig is of any note. */
-
-        ck_free(client->http_req_os);
-        client->http_req_os = ck_memdup(&f->http_tmp,
-          sizeof(struct http_sig));
-
-        client->http_req_os->hdr_cnt = 0;
-        client->http_req_os->sw   = NULL;
-        client->http_req_os->lang = NULL;
-        client->http_req_os->via  = NULL;
-
-        client->last_class_id = m->class_id;
-        client->last_name_id  = m->name_id;
-        client->last_flavor   = m->flavor;
-
-        client->last_quality  = (m->generic * P0F_MATCH_GENERIC);
-
-      } else {
-
-        /* Record app data for the API. */
-
-        client->http_name_id = m->name_id;
-        client->http_flavor  = m->flavor;
-      }
- 
-    }
-
   }
 
 }
