@@ -134,109 +134,6 @@ static u32* decode_hex_string(const u8** val_ptr, u32 line_no) {
    first argument is record (star and question mark allowed),
    second one is an exact signature. */
 
-static int match_sigs(u32* rec, u32* sig) {
-
-  u8 match_any = 0;
-  u32* tmp_sig;
-
-  /* Iterate over record. */
-
-  for (; *rec != END_MARKER && *sig != END_MARKER; rec++) {
-
-    /* 1. Exact match, move on */
-    if ((*rec & ~MATCH_MAYBE) == *sig) {
-      match_any = 0; sig++;
-      continue;
-    }
-
-    /* 2. Star, may match anything */
-    if (*rec == MATCH_ANY) {
-      match_any = 1;
-      continue;
-    }
-
-    /* 3. Optional match, not yet fulfilled */
-    if (*rec & MATCH_MAYBE) {
-      if (match_any) {
-        /* Look forward for the value (aka: greedy match). */
-        for (tmp_sig = sig; *tmp_sig != END_MARKER; tmp_sig++) {
-          if ((*rec & ~MATCH_MAYBE) == *tmp_sig) {
-            /* Got it. */
-            match_any = 0; sig = tmp_sig + 1;
-            break;
-          }
-        }
-      }
-      /* Loop succeeded or optional match failed, whatever, go on. */
-      continue;
-    }
-
-    /* 4. Looking for an exact match after MATCH_ANY */
-    if (match_any) {
-      for (; *sig != END_MARKER; sig++) {
-        if (*rec == *sig) {
-          sig ++;
-          break;
-        }
-      }
-      /* Sig is next char after match or END_MARKER */
-      match_any = 0;
-      continue;
-    }
-
-    /* 5. Nope, not matched. */
-    return 1;
-
-  }
-
-  /* Right, we're after the loop, either rec or sig are set to END_MARKER */
-
-  /* Step 1. Roll rec while it has conditional matches.
-             Sig is END_MARKER if rec is not done.  */
-  for (;(*rec & MATCH_MAYBE) || *rec == MATCH_ANY; rec ++) {};
-
-  /* Step 2. Both finished - hurray. */
-  if (*rec == END_MARKER && *sig == END_MARKER)
-    return 0;
-
-  /* Step 3. Rec is done and we're in MATCH_ANY mode - hurray. */
-  if (*rec == END_MARKER && match_any)
-    return 0;
-
-  /* Step 4. Nope. */
-  return 1;
-
-}
-
-
-static void ssl_find_match(struct ssl_sig* ts) {
-
-  u32 i;
-
-  for (i = 0; i < signatures_cnt; i++) {
-
-    struct ssl_sig_record* ref = &signatures[i];
-    struct ssl_sig* rs = CP(ref->sig);
-
-    /* SSL versions must match exactly. */
-    if (rs->request_version != ts->request_version) continue;
-
-    /* Flags - exact match */
-    if (ts->flags != rs->flags) continue;
-
-    /* Extensions match. */
-    if (match_sigs(rs->extensions, ts->extensions) != 0) continue;
-
-    /* Cipher suites match. */
-    if (match_sigs(rs->cipher_suites, ts->cipher_suites) != 0) continue;
-
-    ts->matched = ref;
-    return;
-
-  }
-
-}
-
 /* Unpack SSLv3 fragment to a signature. We expect to hear ClientHello
  message.  -1 on parsing error, 1 if signature was extracted. */
 
@@ -543,88 +440,6 @@ static u8* dump_sig(struct ssl_sig* sig, u8 fingerprint) {
 
 }
 
-
-/* Register new SSL signature. */
-
-void ssl_register_sig(u8 to_srv, u8 generic, s32 sig_class, u32 sig_name,
-                      u8* sig_flavor, u32 label_id, u32* sys, u32 sys_cnt,
-                      u8* val, u32 line_no) {
-
-  struct ssl_sig* ssig;
-  struct ssl_sig_record* srec;
-
-  /* Client signatures only. */
-  if (to_srv != 1) return;
-
-  /* Only "application" signatures supported, no "OS-identifying". */
-  if (sig_class != -1)
-    FATAL("OS-identifying SSL signatures not supported, use \"!\" instead "
-          "of an OS class in line %u.", line_no);
-
-  ssig = DFL_ck_alloc(sizeof(struct ssl_sig));
-
-  signatures = DFL_ck_realloc(signatures, (signatures_cnt + 1) *
-                              sizeof(struct ssl_sig_record));
-
-  srec = &signatures[signatures_cnt];
-
-
-  int maj = strtol((char*)val, (char**)&val, 10);
-  if (!val || *val != '.') FATAL("Malformed signature in line %u.", line_no);
-  val ++;
-  int min = strtol((char*)val, (char**)&val, 10);
-  if (!val || *val != ':') FATAL("Malformed signature in line %u.", line_no);
-  val ++;
-
-  ssig->request_version = (maj << 8) | min;
-
-  ssig->cipher_suites = decode_hex_string((const u8**)&val, line_no);
-  if (!val || *val != ':' || !ssig->cipher_suites)
-    FATAL("Malformed signature in line %u.", line_no);
-  val ++;
-
-  ssig->extensions = decode_hex_string((const u8**)&val, line_no);
-  if (!val || *val != ':' || !ssig->extensions)
-    FATAL("Malformed signature in line %u.", line_no);
-  val ++;
-
-
-  while (*val) {
-
-    int i;
-    for (i = 0;  flags[i].name != NULL; i++) {
-
-      if (!strncmp((char*)val, flags[i].name, flags[i].name_len)) {
-        ssig->flags |= flags[i].value;
-        val += flags[i].name_len;
-        goto flag_matched;
-      }
-
-    }
-
-    FATAL("Unrecognized flag in line %u.", line_no);
-
-  flag_matched:
-
-    if (*val == ',') val++;
-
-  }
-
-  srec->class_id = sig_class;
-  srec->name_id  = sig_name;
-  srec->flavor   = sig_flavor;
-  srec->label_id = label_id;
-  srec->sys      = sys;
-  srec->sys_cnt  = sys_cnt;
-  srec->line_no  = line_no;
-  srec->generic  = generic;
-
-  srec->sig      = ssig;
-
-  signatures_cnt++;
-
-}
-
 /* Given an SSL client signature look it up and create an observation.  */
 
 static void fingerprint_ssl(u8 to_srv, struct packet_flow* f,
@@ -633,28 +448,10 @@ static void fingerprint_ssl(u8 to_srv, struct packet_flow* f,
   /* Client request only. */
   if (to_srv != 1) return;
 
-  ssl_find_match(sig);
-
-  struct ssl_sig_record* m = sig->matched;
-
   start_observation("ssl request", 5, to_srv, f);
 
-  if (m) {
-
-    /* Found matching signature */
-
-    OBSERVF((m->class_id < 0) ? "app" : "os", "%s%s%s",
-            fp_os_names[m->name_id], m->flavor ? " " : "",
-            m->flavor ? m->flavor : (u8*)"");
-
-    add_observation_field("match_sig", dump_sig(sig->matched->sig, 0));
-
-  } else {
-
-    add_observation_field("app", NULL);
-    add_observation_field("match_sig", NULL);
-
-  }
+  add_observation_field("app", NULL);
+  add_observation_field("match_sig", NULL);
 
   if ((sig->flags & (SSL_FLAG_RTIME | SSL_FLAG_STIME)) == 0) {
 
