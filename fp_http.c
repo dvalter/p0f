@@ -653,186 +653,6 @@ static u8* dump_flags(struct http_sig* hsig, struct http_sig_record* m) {
 
 }
 
-
-/* Score signature differences. For unknown signatures, the presumption is that
-   they identify apps, so the logic is quite different from TCP. */
-
-static void score_nat(u8 to_srv, struct packet_flow* f) {
-
-  struct http_sig_record* m = f->http_tmp.matched;
-  struct host_data* hd;
-  struct http_sig* ref;
-
-  u8  score = 0, diff_already = 0;
-  u16 reason = 0;
-
-  if (to_srv) {
-
-    hd = f->client;
-    ref = hd->http_req_os;
-
-  } else {
-
-    hd = f->server;
-    ref = hd->http_resp;
-
-    /* If the signature is for a different port, don't read too much into it. */
-
-    if (hd->http_resp_port != f->srv_port) ref = NULL;
-
-  }
-
-  if (!m) {
-
-    /* No match. The user is probably running another app; this is only of
-       interest if a server progresses from known to unknown. We can't
-       compare two unknown server sigs with that much confidence. */
-
-    if (!to_srv && ref && ref->matched) {
-
-      DEBUG("[#] HTTP server signature changed from known to unknown.\n");
-      score  += 4;
-      reason |= NAT_TO_UNK;
-
-    }
-
-    goto header_check;
-
-  }
-
-  if (m->class_id == -1) {
-
-    /* Got a match for an application signature. Make sure it runs on the
-       OS we have on file... */
-
-    verify_tool_class(to_srv, f, m->sys, m->sys_cnt);
-
-    /* ...and check for inconsistencies in server behavior. */
-
-    if (!to_srv && ref && ref->matched) {
-
-      if (ref->matched->name_id != m->name_id) {
-
-        DEBUG("[#] Name on the matched HTTP server signature changes.\n");
-        score  += 8;
-        reason |= NAT_APP_LB;
-
-      } else if (ref->matched->label_id != m->label_id) {
-
-        DEBUG("[#] Label on the matched HTTP server signature changes.\n");
-        score  += 2;
-        reason |= NAT_APP_LB;
-
-      }
-
-    }
-
-  } else {
-
-    /* Ooh, spiffy: a match for an OS signature! There will be about two uses
-       for this code, ever. */
-
-    if (ref && ref->matched) {
-
-      if (ref->matched->name_id != m->name_id) {
-
-        DEBUG("[#] Name on the matched HTTP OS signature changes.\n");
-        score  += 8;
-        reason |= NAT_OS_SIG;
-        diff_already = 1;
-
-      } else if (ref->matched->name_id != m->label_id) {
-
-        DEBUG("[#] Label on the matched HTTP OS signature changes.\n");
-        score  += 2;
-        reason |= NAT_OS_SIG;
-
-      }
-
-    } else if (ref) {
-
-      DEBUG("[#] HTTP OS signature changed from unknown to known.\n");
-      score  += 4;
-      reason |= NAT_TO_UNK;
-
-    }
-
-    /* If we haven't pointed out anything major yet, also complain if the
-       signature doesn't match host data. */
-
-    if (!diff_already && hd->last_name_id != m->name_id) {
-
-      DEBUG("[#] Matched HTTP OS signature different than host data.\n");
-      score  += 4;
-      reason |= NAT_OS_SIG;
-
-    }
-
-  }
-
-  /* If we have determined that U-A looks legit, but the OS doesn't match,
-     that's a clear sign of trouble. */
-
-  if (to_srv && m->class_id == -1 && f->http_tmp.sw && !f->http_tmp.dishonest) {
-
-    u32 i;
-
-    for (i = 0; i < ua_map_cnt; i++)
-      if (strstr((char*)f->http_tmp.sw, (char*)ua_map[i].name)) break;
-
-    if (i != ua_map_cnt) {
-
-      if (ua_map[i].id != hd->last_name_id) {
-
-        DEBUG("[#] Otherwise plausible User-Agent points to another OS.\n");
-        score  += 4;
-        reason |= NAT_APP_UA;
-      }
-
-    }
-
-  }
-
-
-header_check:
-
-  /* Okay, some last-resort checks. This is obviously concerning: */
-
-  if (f->http_tmp.via) {
-    DEBUG("[#] Explicit use of Via or X-Forwarded-For.\n");
-    score  += 8;
-    reason |= NAT_APP_VIA;
-  }
-
-  /* Last but not least, see what happened to 'Date': */
-
-  if (ref && !to_srv && ref->date && f->http_tmp.date) {
-
-    s64 recv_diff = ((s64)f->http_tmp.recv_date) - ref->recv_date;
-    s64 hdr_diff  = ((s64)f->http_tmp.date) - ref->date;
-
-    if (hdr_diff < -HTTP_MAX_DATE_DIFF || 
-        hdr_diff > recv_diff + HTTP_MAX_DATE_DIFF) {
-
-      DEBUG("[#] HTTP 'Date' distance too high (%lld in %lld sec).\n",
-             hdr_diff, recv_diff);
-      score  += 4;
-      reason |= NAT_APP_DATE;
-
-    } else {
-
-      DEBUG("[#] HTTP 'Date' distance seems fine (%lld in %lld sec).\n",
-             hdr_diff, recv_diff);
-
-    }
-
-  }
-
-  add_nat_score(to_srv, f, reason, score);
-
-}
-
-
 /* Look up HTTP signature, create an observation. */
 
 static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
@@ -873,8 +693,6 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
 
   u8* http_raw_sig = dump_sig(to_srv, &f->http_tmp);
   add_observation_field("raw_sig", http_raw_sig);
-
-  score_nat(to_srv, f);
 
   /* Save observations needed to score future responses. */
 
@@ -936,7 +754,8 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
       client->http_req_port = f->orig_cli_port;
   }
 
-    strncpy((char*)client->http_raw_sig, http_raw_sig, HTTP_MAX_SHOW + 1);
+    strncpy((char*)client->http_raw_sig, http_raw_sig, strlen(http_raw_sig));
+    client->http_raw_sig[strlen(http_raw_sig) + 1] = '\0';
 
     if (lang) client->language = lang;
 
