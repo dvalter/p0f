@@ -224,9 +224,6 @@ u8 handle_query(u8* q, u8* r) {
 
   }
 
-  if (h->link_type)
-    strncpy((char*)r->link_type, (char*)h->link_type, P0F_STR_MAX + 1);
-
   if (h->language)
     strncpy((char*)r->language, (char*)h->language, P0F_STR_MAX + 1);
 
