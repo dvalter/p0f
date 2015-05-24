@@ -46,7 +46,6 @@
 #include "debug.h"
 #include "alloc-inl.h"
 #include "process.h"
-#include "readfp.h"
 #include "api.h"
 #include "tcp.h"
 #include "fp_http.h"
@@ -1188,8 +1187,6 @@ int main(int argc, char** argv) {
   get_hash_seed();
 
   http_init();
-
-  read_config(fp_file ? fp_file : (u8*)FP_FILE);
 
   prepare_pcap();
   prepare_bpf();

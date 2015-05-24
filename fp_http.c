@@ -25,7 +25,6 @@
 #include "debug.h"
 #include "alloc-inl.h"
 #include "process.h"
-#include "readfp.h"
 #include "p0f.h"
 #include "tcp.h"
 #include "hash.h"
@@ -154,63 +153,6 @@ void http_init(void) {
   }
 
 }
-
-/* Register new HTTP signature. */
-
-void http_parse_ua(u8* val, u32 line_no) {
-
-  u8* nxt;
-
-  while (*val) {
-
-    u32 id;
-    u8* name = NULL;
-
-    nxt = val;
-    while (*nxt && (isalnum(*nxt) || strchr(NAME_CHARS, *nxt))) nxt++;
-
-    if (val == nxt)
-      FATAL("Malformed system name in line %u.", line_no);
-
-    id = lookup_name_id(val, nxt - val);
-
-    val = nxt;
-
-    if (*val == '=') {
-
-      if (val[1] != '[') 
-        FATAL("Missing '[' after '=' in line %u.", line_no);
-
-      val += 2;
-      nxt = val;
-
-      while (*nxt && *nxt != ']') nxt++;
-
-      if (val == nxt || !*nxt)
-        FATAL("Malformed signature in line %u.", line_no);
-
-      name = DFL_ck_memdup_str(val, nxt - val);
-
-      val = nxt + 1;
-
-    }
-
-    ua_map = DFL_ck_realloc(ua_map, (ua_map_cnt + 1) *
-                        sizeof(struct ua_map_record));
-
-    ua_map[ua_map_cnt].id = id;
-   
-    if (!name) ua_map[ua_map_cnt].name = fp_os_names[id];
-      else ua_map[ua_map_cnt].name = name;
-
-    ua_map_cnt++;
-
-    if (*val == ',') val++;
-
-  }
-
-}
-
 
 /* Dump a HTTP signature. */
 

@@ -30,7 +30,6 @@
 #include "process.h"
 #include "hash.h"
 #include "tcp.h"
-#include "readfp.h"
 #include "p0f.h"
 
 #include "fp_tcp.h"

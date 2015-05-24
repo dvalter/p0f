@@ -21,7 +21,6 @@
 #include "debug.h"
 #include "alloc-inl.h"
 #include "process.h"
-#include "readfp.h"
 #include "p0f.h"
 #include "tcp.h"
 

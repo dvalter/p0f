@@ -88,8 +88,6 @@ struct http_sig_record {
 
 struct packet_flow;
 
-void http_parse_ua(u8* val, u32 line_no);
-
 u8 process_http(u8 to_srv, struct packet_flow* f);
 
 void free_sig_hdrs(struct http_sig* h);

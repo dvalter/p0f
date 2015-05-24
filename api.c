@@ -24,7 +24,6 @@
 #include "p0f.h"
 #include "api.h"
 #include "process.h"
-#include "readfp.h"
 
 /* Process API queries. */
 
