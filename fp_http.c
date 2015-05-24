@@ -37,12 +37,6 @@ static u32  hdr_cnt;                   /* Number of headers registered       */
 static u32* hdr_by_hash[SIG_BUCKETS];  /* Hashed header names                */
 static u32  hbh_cnt[SIG_BUCKETS];      /* Number of headers in bucket        */
 
-/* Signatures aren't bucketed due to the complex matching used; but we use
-   Bloom filters to go through them quickly. */
-
-static struct http_sig_record* sigs[2];
-static u32 sig_cnt[2];
-
 static struct ua_map_record* ua_map;   /* Mappings between U-A and OS        */
 static u32 ua_map_cnt;
 
