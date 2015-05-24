@@ -349,22 +349,6 @@ void free_sig_hdrs(struct http_sig* h) {
 
 }
 
-
-/* Parse HTTP date field. */
-
-static u32 parse_date(u8* str) {
-  struct tm t;
-
-  if (!strptime((char*)str, "%a, %d %b %Y %H:%M:%S %Z", &t)) {
-    DEBUG("[#] Invalid 'Date' field ('%s').\n", str);
-    return 0;
-  }
-
-  return mktime(&t);
-
-}
-
-
 /* Parse name=value pairs into a signature. */
 
 static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
@@ -547,7 +531,6 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
         switch (hid) {
 
           case HDR_SRV: f->http_tmp.sw = val; break;
-          case HDR_DAT: f->http_tmp.date = parse_date(val); break;
         }
 
       }

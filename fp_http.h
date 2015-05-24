@@ -52,7 +52,6 @@ struct http_sig {
 
   u8* sw;                               /* Software string (U-A or Server)    */
 
-  u32 date;                             /* Parsed 'Date'                      */
   u32 recv_date;                        /* Actual receipt date                */
 
   /* Information used for matching with p0f.fp: */
