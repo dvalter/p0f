@@ -117,6 +117,9 @@ struct host_data {
   u16 http_req_port;                    /* Port on which response seen        */
   u16 http_resp_port;                   /* Port on which response seen        */
 
+  u8 tcp_signature[SIGNATURE_LENGTH + 1];
+
+
   u8 http_raw_sig[SIGNATURE_LENGTH + 1];
 
   u8 ssl_signature[SIGNATURE_LENGTH + 1];

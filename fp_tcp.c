@@ -951,7 +951,17 @@ struct tcp_sig* fingerprint_tcp(u8 to_srv, struct packet_data* pk,
 
   add_observation_field("params", dump_flags(pk, sig));
 
-  add_observation_field("raw_sig", dump_sig(pk, sig, f->syn_mss));
+  u8 *raw_sig = dump_sig(pk, sig, f->syn_mss);
+  u8 *p;
+
+  p = strncpy(
+    to_srv ? (char*)f->client->tcp_signature : (char*)f->server->tcp_signature,
+    raw_sig,
+    strlen(raw_sig) > SIGNATURE_LENGTH ? SIGNATURE_LENGTH : strlen(raw_sig)
+  );
+  p = "\0";
+
+  add_observation_field("raw_sig", raw_sig);
 
   if (pk->tcp_type == TCP_SYN) f->syn_mss = pk->mss;
 
