@@ -216,11 +216,6 @@ s32 handle_query(u8* q, u8* r) {
 
   }
 
-    if (h->http_flavor)
-      strncpy((char*)r->http_flavor, (char*)h->http_flavor, P0F_STR_MAX + 1);
-
-  }
-
   if (h->language)
     strncpy((char*)r->language, (char*)h->language, P0F_STR_MAX + 1);
 
