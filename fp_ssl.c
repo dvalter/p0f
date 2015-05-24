@@ -477,7 +477,8 @@ u8 process_ssl(u8 to_srv, struct packet_flow* f) {
 
   int success = 0;
   struct ssl_sig sig;
-
+  u8 *raw_sig;
+  u8 *p;
 
   /* Already decided this flow? */
 
@@ -539,7 +540,14 @@ u8 process_ssl(u8 to_srv, struct packet_flow* f) {
 
   fingerprint_ssl(to_srv, f, &sig);
 
-  strncpy((char*)f->client->ssl_signature, dump_sig(&sig, 0), HTTP_MAX_SHOW + 1);
+  raw_sig = dump_sig(&sig, 0);
+  p = strncpy(
+    (char*)f->client->ssl_signature,
+    raw_sig,
+    strlen(raw_sig) > SIGNATURE_LENGTH ? SIGNATURE_LENGTH : strlen(raw_sig)
+  );
+  p = "\0";
+
 
   if (sig.remote_time && !(sig.flags & SSL_FLAG_RTIME)) {
     f->client->ssl_remote_time = sig.remote_time;

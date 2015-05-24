@@ -299,49 +299,39 @@ static u8* dump_sig(u8 to_srv, struct http_sig* hsig) {
 /* Look up HTTP signature, create an observation. */
 
 static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
+  u8* p;
+  u8* http_signature;
+  struct host_data* client;
+
+
+  http_signature = dump_sig(to_srv, &f->http_tmp);
+
   start_observation(to_srv ? "http request" : "http response", 1, to_srv, f);
+  add_observation_field("http_signature", http_signature);
 
-  u8* http_raw_sig = dump_sig(to_srv, &f->http_tmp);
-  add_observation_field("http_signature", http_raw_sig);
+  if(!f->orig_cli_port) {
+    client = f->client;
+    client->http_req_port = f->cli_port;
 
-  /* Save observations needed to score future responses. */
-
-  if (!to_srv) {
-
-    /* For server response, always store the signature. */
-
-    ck_free(f->server->http_resp);
-    f->server->http_resp = ck_memdup(&f->http_tmp, sizeof(struct http_sig));
-
-    f->server->http_resp->hdr_cnt = 0;
-    f->server->http_resp->sw   = NULL;
-
-    f->server->http_resp_port = f->srv_port;
   } else {
-    struct host_data* client;
+    client = lookup_host(f->orig_cli_addr, IP_VER4);
 
-
-    if(!f->orig_cli_port) {
+    if(!client) {
+      DEBUG("[#] Could not find real client: %s:%u\n", addr_to_str(f->orig_cli_addr, IP_VER4), f->orig_cli_port);
       client = f->client;
-      client->http_req_port = f->cli_port;
-
     } else {
-      client = lookup_host(f->orig_cli_addr, IP_VER4);
+      DEBUG("[#] Attributing http findings to real client: %s:%u\n", addr_to_str(f->orig_cli_addr, IP_VER4), f->orig_cli_port);
+    }
 
-      if(!client) {
-        DEBUG("[#] Could not find real client: %s:%u\n", addr_to_str(f->orig_cli_addr, IP_VER4), f->orig_cli_port);
-        client = f->client;
-      } else {
-        DEBUG("[#] Attributing http findings to real client: %s:%u\n", addr_to_str(f->orig_cli_addr, IP_VER4), f->orig_cli_port);
-      }
-
-      client->http_req_port = f->orig_cli_port;
+    client->http_req_port = f->orig_cli_port;
   }
 
-    strncpy((char*)client->http_raw_sig, http_raw_sig, strlen(http_raw_sig));
-    client->http_raw_sig[strlen(http_raw_sig) + 1] = '\0';
-  }
-
+  p = strncpy(
+    (char*)client->http_signature,
+    http_signature,
+    strlen(http_signature) > SIGNATURE_LENGTH ? SIGNATURE_LENGTH : strlen(http_signature)
+  );
+  p = "\0";
 }
 
 
@@ -586,6 +576,8 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
    be read. Note that the buffer is always NUL-terminated. */
 
 u8 process_http(u8 to_srv, struct packet_flow* f) {
+  //no tracking for server responses
+  if (!to_srv) return 0;
 
   /* Already decided this flow is not worth tracking? */
 

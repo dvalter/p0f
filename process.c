@@ -823,8 +823,6 @@ static void destroy_host(struct host_data* h) {
   ck_free(h->last_syn);
   ck_free(h->last_synack);
 
-  ck_free(h->http_resp);
-
   ck_free(h);
 
   host_cnt--;
