@@ -29,7 +29,7 @@
 void extract_mtu(u8 to_srv, struct packet_data* pk, struct packet_flow* f) {
   u16 mtu;
 
-  start_observation("mtu", 2, to_srv, f);
+  start_observation("mtu", 1, to_srv, f);
 
   if (!pk->mss || f->sendsyn) return;
 
@@ -39,6 +39,5 @@ void extract_mtu(u8 to_srv, struct packet_data* pk, struct packet_flow* f) {
   if (to_srv) f->client->mtu = mtu;
   else f->server->mtu = mtu;
 
-  add_observation_field("link", NULL);
   OBSERVF("raw_mtu", "%u", mtu);
 }

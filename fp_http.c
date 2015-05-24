@@ -296,25 +296,6 @@ static u8* dump_sig(u8 to_srv, struct http_sig* hsig) {
 
 }
 
-
-/* Dump signature flags. */
-
-static u8* dump_flags(struct http_sig* hsig, struct http_sig_record* m) {
-
-  static u8* ret;
-  u32 rlen = 0;
-
-  RETF("");
-
-  if (!hsig->sw) RETF(" anonymous");
-  if (m && m->generic) RETF(" generic");
-
-#undef RETF
-
-  if (*ret) return ret + 1; else return (u8*)"none";
-
-}
-
 /* Look up HTTP signature, create an observation. */
 
 static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
