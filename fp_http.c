@@ -306,7 +306,6 @@ static u8* dump_flags(struct http_sig* hsig, struct http_sig_record* m) {
 
   RETF("");
 
-  if (hsig->dishonest) RETF(" dishonest");
   if (!hsig->sw) RETF(" anonymous");
   if (m && m->generic) RETF(" generic");
 
@@ -319,14 +318,10 @@ static u8* dump_flags(struct http_sig* hsig, struct http_sig_record* m) {
 /* Look up HTTP signature, create an observation. */
 
 static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
-  start_observation(to_srv ? "http request" : "http response", 4, to_srv, f);
-
-  add_observation_field("app", NULL);
-  add_observation_field("lang", NULL);
-  add_observation_field("params", NULL);
+  start_observation(to_srv ? "http request" : "http response", 1, to_srv, f);
 
   u8* http_raw_sig = dump_sig(to_srv, &f->http_tmp);
-  add_observation_field("raw_sig", http_raw_sig);
+  add_observation_field("http_signature", http_raw_sig);
 
   /* Save observations needed to score future responses. */
 
@@ -339,7 +334,6 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
 
     f->server->http_resp->hdr_cnt = 0;
     f->server->http_resp->sw   = NULL;
-    f->server->http_resp->via  = NULL;
 
     f->server->http_resp_port = f->srv_port;
   } else {
@@ -575,8 +569,6 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
 
         switch (hid) {
           case HDR_UA: f->http_tmp.sw = val; break;
-          case HDR_VIA:
-          case HDR_XFF: f->http_tmp.via = val; break;
         }
 
       } else {
@@ -585,9 +577,6 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
 
           case HDR_SRV: f->http_tmp.sw = val; break;
           case HDR_DAT: f->http_tmp.date = parse_date(val); break;
-          case HDR_VIA:
-          case HDR_XFF: f->http_tmp.via = val; break;
-
         }
 
       }

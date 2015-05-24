@@ -51,7 +51,6 @@ struct http_sig {
   u32 miss_cnt;
 
   u8* sw;                               /* Software string (U-A or Server)    */
-  u8* via;                              /* Via or X-Forwarded-For             */
 
   u32 date;                             /* Parsed 'Date'                      */
   u32 recv_date;                        /* Actual receipt date                */
@@ -59,8 +58,6 @@ struct http_sig {
   /* Information used for matching with p0f.fp: */
 
   struct http_sig_record* matched;      /* NULL = no match                    */
-  u8  dishonest;                        /* "sw" looks forged?                 */
-
 };
 
 /* Record for a HTTP signature read from p0f.fp: */
