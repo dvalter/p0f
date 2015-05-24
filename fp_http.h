@@ -51,7 +51,6 @@ struct http_sig {
   u32 miss_cnt;
 
   u8* sw;                               /* Software string (U-A or Server)    */
-  u8* lang;                             /* Accept-Language                    */
   u8* via;                              /* Via or X-Forwarded-For             */
 
   u32 date;                             /* Parsed 'Date'                      */

@@ -397,7 +397,6 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
 
     f->server->http_resp->hdr_cnt = 0;
     f->server->http_resp->sw   = NULL;
-    f->server->http_resp->lang = NULL;
     f->server->http_resp->via  = NULL;
 
     f->server->http_resp_port = f->srv_port;
@@ -634,7 +633,6 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
 
         switch (hid) {
           case HDR_UA: f->http_tmp.sw = val; break;
-          case HDR_AL: f->http_tmp.lang = val; break;
           case HDR_VIA:
           case HDR_XFF: f->http_tmp.via = val; break;
         }

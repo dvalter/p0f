@@ -112,8 +112,6 @@ struct host_data {
 
   struct http_sig* http_resp;           /* Last response                      */
 
-  u8* language;                         /* Detected language                  */
-
   u16 http_req_port;                    /* Port on which response seen        */
   u16 http_resp_port;                   /* Port on which response seen        */
 

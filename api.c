@@ -206,10 +206,6 @@ s32 handle_query(u8* q, u8* r) {
   return r - response_start;
 /*
 
-  if (h->language)
-    strncpy((char*)r->language, (char*)h->language, P0F_STR_MAX + 1);
-
-
   r->ssl_remote_time  = h->ssl_remote_time;
   r->ssl_recv_time    = h->ssl_recv_time;
 
