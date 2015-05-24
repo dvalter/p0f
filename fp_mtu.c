@@ -27,6 +27,11 @@
 #include "fp_mtu.h"
 
 void extract_mtu(u8 to_srv, struct packet_data* pk, struct packet_flow* f) {
+  //only mease MTU from clients
+  if (!to_srv) {
+    return;
+  }
+
   u16 mtu;
 
   start_observation("mtu", 1, to_srv, f);
@@ -36,8 +41,7 @@ void extract_mtu(u8 to_srv, struct packet_data* pk, struct packet_flow* f) {
   if (pk->ip_ver == IP_VER4) mtu = pk->mss + MIN_TCP4;
   else mtu = pk->mss + MIN_TCP6;
 
-  if (to_srv) f->client->mtu = mtu;
-  else f->server->mtu = mtu;
+  f->client->mtu = mtu;
 
   OBSERVF("raw_mtu", "%u", mtu);
 }
