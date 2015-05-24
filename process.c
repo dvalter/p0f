@@ -899,7 +899,6 @@ static struct host_data* create_host(u8* addr, u8 ip_ver) {
   nh->last_up_min     = -1;
   nh->last_class_id   = -1;
   nh->last_name_id    = -1;
-  nh->http_name_id    = -1;
   nh->distance        = -1;
 
   host_cnt++;

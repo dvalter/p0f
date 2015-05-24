@@ -180,10 +180,8 @@ s32 handle_query(u8* q, u8* r) {
     r = append_json_u32     (r, "ip_version",       ip_ver);
     r = append_json_string  (r, "ip",               addr_to_str(cli_addr, ip_ver));
 
-    r = append_json_s32     (r, "uptime_minutes",   h->last_up_min);
-
-//    r->up_mod_days      = h->up_mod_days;
-
+    r = append_json_s32     (r, "uptime_minutes",    h->last_up_min);
+    r = append_json_u32     (r, "uptime_mod_days",   h->up_mod_days);
 
     r = append_json_u32     (r, "first_seen",       h->first_seen);
     r = append_json_u32     (r, "last_seen",        h->last_seen);
@@ -217,11 +215,6 @@ s32 handle_query(u8* q, u8* r) {
        strncpy((char*)r->os_flavor, (char*)h->last_flavor, P0F_STR_MAX + 1);
 
   }
-
-  if (h->http_name_id != -1) {
-
-    strncpy((char*)r->http_name, (char*)fp_os_names[h->http_name_id],
-            P0F_STR_MAX + 1);
 
     if (h->http_flavor)
       strncpy((char*)r->http_flavor, (char*)h->http_flavor, P0F_STR_MAX + 1);

@@ -126,7 +126,6 @@ struct host_data {
   struct http_sig* http_req_os;         /* Last request, if class != -1       */
   struct http_sig* http_resp;           /* Last response                      */
 
-  s32 http_name_id;                     /* Client name ID (-1 = not found)    */
   u8* http_flavor;                      /* Client flavor                      */
 
   u8* language;                         /* Detected language                  */
