@@ -825,7 +825,6 @@ static void destroy_host(struct host_data* h) {
   ck_free(h->last_synack);
 
   ck_free(h->http_resp);
-  ck_free(h->http_req_os);
 
   ck_free(h);
 
@@ -897,8 +896,6 @@ static struct host_data* create_host(u8* addr, u8 ip_ver) {
   nh->last_seen = nh->first_seen = get_unix_time();
 
   nh->last_up_min     = -1;
-  nh->last_class_id   = -1;
-  nh->last_name_id    = -1;
   nh->distance        = -1;
 
   host_cnt++;

@@ -206,22 +206,8 @@ s32 handle_query(u8* q, u8* r) {
   return r - response_start;
 /*
 
-  if (h->last_name_id != -1) {
-
-    strncpy((char*)r->os_name, (char*)fp_os_names[h->last_name_id],
-            P0F_STR_MAX + 1);
-
-    if (h->last_flavor)
-       strncpy((char*)r->os_flavor, (char*)h->last_flavor, P0F_STR_MAX + 1);
-
-  }
-
   if (h->language)
     strncpy((char*)r->language, (char*)h->language, P0F_STR_MAX + 1);
-
-
-  r->os_match_q       = h->last_quality;
-
 
 
   r->ssl_remote_time  = h->ssl_remote_time;

@@ -99,12 +99,6 @@ struct host_data {
   struct tcp_sig* last_syn;             /* Sig of the most recent SYN         */
   struct tcp_sig* last_synack;          /* Sig of the most recent SYN+ACK     */
 
-  s32 last_class_id;                    /* OS class ID (-1 = not found)       */
-  s32 last_name_id;                     /* OS name ID (-1 = not found)        */
-  u8* last_flavor;                      /* Last OS flavor                     */
-
-  u8  last_quality;                     /* Generic or fuzzy match?            */
-
   u16 mtu;                              /* MTU */
 
   u16 last_port;                        /* Source port on last SYN            */
@@ -116,7 +110,6 @@ struct host_data {
 
   /* HTTP business: */
 
-  struct http_sig* http_req_os;         /* Last request, if class != -1       */
   struct http_sig* http_resp;           /* Last response                      */
 
   u8* language;                         /* Detected language                  */

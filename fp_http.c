@@ -378,30 +378,10 @@ static u8* dump_flags(struct http_sig* hsig, struct http_sig_record* m) {
 /* Look up HTTP signature, create an observation. */
 
 static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
-  u8* lang = NULL;
-
   start_observation(to_srv ? "http request" : "http response", 4, to_srv, f);
 
   add_observation_field("app", NULL);
-
-  if (f->http_tmp.lang && isalpha(f->http_tmp.lang[0]) &&
-      isalpha(f->http_tmp.lang[1]) && !isalpha(f->http_tmp.lang[2])) {
-
-    u8 lh = LANG_HASH(f->http_tmp.lang[0], f->http_tmp.lang[1]);
-    u8 pos = 0;
-
-    while (languages[lh][pos]) {
-      if (f->http_tmp.lang[0] == languages[lh][pos][0] &&
-          f->http_tmp.lang[1] == languages[lh][pos][1]) break;
-      pos += 2;
-    }
-
-    if (!languages[lh][pos]) add_observation_field("lang", NULL);
-      else add_observation_field("lang", 
-           (lang = (u8*)languages[lh][pos + 1]));
-
-  } else add_observation_field("lang", (u8*)"none");
-
+  add_observation_field("lang", NULL);
   add_observation_field("params", NULL);
 
   u8* http_raw_sig = dump_sig(to_srv, &f->http_tmp);
@@ -422,8 +402,6 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
     f->server->http_resp->via  = NULL;
 
     f->server->http_resp_port = f->srv_port;
-
-    if (lang) f->server->language = lang;
   } else {
     struct host_data* client;
 
@@ -447,8 +425,6 @@ static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
 
     strncpy((char*)client->http_raw_sig, http_raw_sig, strlen(http_raw_sig));
     client->http_raw_sig[strlen(http_raw_sig) + 1] = '\0';
-
-    if (lang) client->language = lang;
   }
 
 }
