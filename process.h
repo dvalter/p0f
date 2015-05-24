@@ -211,7 +211,6 @@ u64 get_unix_time_ms(void);
 u32 get_unix_time(void);
 
 void add_nat_score(u8 to_srv, struct packet_flow* f, u16 reason, u8 score);
-void verify_tool_class(u8 to_srv, struct packet_flow* f, u32* sys, u32 sys_cnt);
 
 struct host_data* lookup_host(u8* addr, u8 ip_ver);
 

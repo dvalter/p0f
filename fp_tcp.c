@@ -958,7 +958,6 @@ struct tcp_sig* fingerprint_tcp(u8 to_srv, struct packet_data* pk,
   /* That's about as far as we go with non-OS signatures. */
 
   if (m && m->class_id == -1) {
-    verify_tool_class(to_srv, f, m->sys, m->sys_cnt);
     ck_free(sig);
     return NULL;
   }

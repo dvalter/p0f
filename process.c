@@ -1476,53 +1476,6 @@ void add_nat_score(u8 to_srv, struct packet_flow* f, u16 reason, u8 score) {
 
 }
 
-
-/* Verify if tool class (called from modules). */
-
-void verify_tool_class(u8 to_srv, struct packet_flow* f, u32* sys, u32 sys_cnt) {
-
-  struct host_data* hd;
-  u32 i;
-
-  if (to_srv) hd = f->client; else hd = f->server;
-
-  CP(sys);
-
-  /* No existing data; although there is perhaps some value in detecting
-     app-only conflicts in absence of other info, it's probably OK to just
-     wait until more data becomes available. */
-
-  if (hd->last_class_id == -1) return;
-
-  for (i = 0; i < sys_cnt; i++)
-
-    if ((sys[i] & SYS_CLASS_FLAG)) {
-
-      if (SYS_NF(sys[i]) == hd->last_class_id) break;
-
-    } else {
-
-      if (SYS_NF(sys[i]) == hd->last_name_id) break;
-
-    }
-
-  /* Oops, a mismatch. */
-
-  if (i == sys_cnt) {
-
-    DEBUG("[#] Detected app not supposed to run on host OS.\n");
-    add_nat_score(to_srv, f, NAT_APP_SIG, 4);
-
-  } else {
-
-    DEBUG("[#] Detected app supported on host OS.\n");
-    add_nat_score(to_srv, f, 0, 0);
-
-  }
-
-}
-
-
 /* Clean up everything. */
 
 void destroy_all_hosts(void) {
