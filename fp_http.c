@@ -31,7 +31,6 @@
 #include "hash.h"
 
 #include "fp_http.h"
-#include "languages.h"
 
 static u8** hdr_names;                 /* List of header names by ID         */
 static u32  hdr_cnt;                   /* Number of headers registered       */
