@@ -195,8 +195,6 @@ u8* addr_to_str(u8* data, u8 ip_ver);
 u64 get_unix_time_ms(void);
 u32 get_unix_time(void);
 
-void add_nat_score(u8 to_srv, struct packet_flow* f, u16 reason, u8 score);
-
 struct host_data* lookup_host(u8* addr, u8 ip_ver);
 
 void destroy_all_hosts(void);
