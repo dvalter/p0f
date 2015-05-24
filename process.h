@@ -107,13 +107,6 @@ struct host_data {
 
   u16 mtu;                              /* MTU */
 
-  u8  cli_scores[NAT_SCORES];           /* Scoreboard for client NAT          */
-  u8  srv_scores[NAT_SCORES];           /* Scoreboard for server NAT          */
-  u16 nat_reasons;                      /* NAT complaints                     */
-
-  u32 last_nat;                         /* Last NAT detection time            */
-  u32 last_chg;                         /* Last OS change detection time      */
-
   u16 last_port;                        /* Source port on last SYN            */
 
   u8  distance;                         /* Last measured distance             */

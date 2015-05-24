@@ -219,12 +219,6 @@ s32 handle_query(u8* q, u8* r) {
   if (h->language)
     strncpy((char*)r->language, (char*)h->language, P0F_STR_MAX + 1);
 
-  r->last_nat         = h->last_nat;
-  r->last_chg         = h->last_chg;
-
-
-
-
 
   r->os_match_q       = h->last_quality;
 
