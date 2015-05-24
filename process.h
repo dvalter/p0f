@@ -141,18 +141,6 @@ struct host_data {
   u32 ssl_recv_time;                    /* Time drift derived from SSL        */
 };
 
-/* Reasons for NAT detection: */
-
-#define NAT_APP_SIG          0x0001     /* App signature <-> OS mismatch      */
-#define NAT_OS_SIG           0x0002     /* OS detection mismatch              */
-#define NAT_UNK_DIFF         0x0004     /* Current sig unknown, but different */
-#define NAT_TO_UNK           0x0008     /* Sig changed from known to unknown  */
-#define NAT_TS               0x0010     /* Timestamp goes back                */
-#define NAT_PORT             0x0020     /* Source port goes back              */
-#define NAT_TTL              0x0040     /* TTL changes unexpectedly           */
-#define NAT_FUZZY            0x0080     /* Signature fuzziness changes        */
-#define NAT_MSS              0x0100     /* MSS changes                        */
-
 /* TCP flow record, maintained until all fingerprinting modules are happy: */
 
 struct packet_flow {

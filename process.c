@@ -1454,22 +1454,6 @@ void add_nat_score(u8 to_srv, struct packet_flow* f, u16 reason, u8 score) {
 
   *rptr = 0;
 
-#define REAF(_par...) do { \
-    rptr += sprintf((char*)rptr, _par); \
-  } while (0) 
-
-  if (reason & NAT_APP_SIG)  REAF(" app_vs_os");
-  if (reason & NAT_OS_SIG)   REAF(" os_diff");
-  if (reason & NAT_UNK_DIFF) REAF(" sig_diff");
-  if (reason & NAT_TO_UNK)   REAF(" x_known");
-  if (reason & NAT_TS)       REAF(" tstamp");
-  if (reason & NAT_TTL)      REAF(" ttl");
-  if (reason & NAT_PORT)     REAF(" port");
-  if (reason & NAT_MSS)      REAF(" mtu");
-  if (reason & NAT_FUZZY)    REAF(" fuzzy");
-
-#undef REAF
-
   add_observation_field("reason", rea[0] ? (rea + 1) : NULL);
 
   OBSERVF("raw_hits", "%u,%u,%u,%u", over_5, over_2, over_1, over_0);
