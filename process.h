@@ -81,6 +81,8 @@ struct packet_data {
 #define QUIRK_OPT_EXWS       0x08000000 /* Excessive window scaling           */
 #define QUIRK_OPT_BAD        0x10000000 /* Problem parsing TCP options        */
 
+#define SIGNATURE_LENGTH    500
+
 /* Host record with persistent fingerprinting data: */
 
 struct host_data {
@@ -115,9 +117,9 @@ struct host_data {
   u16 http_req_port;                    /* Port on which response seen        */
   u16 http_resp_port;                   /* Port on which response seen        */
 
-  u8 http_raw_sig[HTTP_MAX_SHOW + 1];
+  u8 http_raw_sig[SIGNATURE_LENGTH + 1];
 
-  u8 ssl_raw_sig[HTTP_MAX_SHOW + 1];
+  u8 ssl_signature[SIGNATURE_LENGTH + 1];
   u32 ssl_remote_time;                  /* Last client timestamp from SSL     */
   u32 ssl_recv_time;                    /* Time drift derived from SSL        */
 };

@@ -191,7 +191,10 @@ s32 handle_query(u8* q, u8* r) {
     r = append_json_u32     (r, "mtu",              h->mtu);
 
     r = append_json_string  (r, "http_raw_sig",       &h->http_raw_sig);
-    r = append_json_string  (r, "ssl_raw_sig",        &h->ssl_raw_sig);
+
+    r = append_json_string  (r, "ssl_signature",     &h->ssl_signature);
+    r = append_json_u32     (r, "ssl_remote_time",    h->ssl_remote_time);
+
 
     //remove last comma
     r = r - 2;
@@ -206,7 +209,6 @@ s32 handle_query(u8* q, u8* r) {
   return r - response_start;
 /*
 
-  r->ssl_remote_time  = h->ssl_remote_time;
   r->ssl_recv_time    = h->ssl_recv_time;
 
 */
