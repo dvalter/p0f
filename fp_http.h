@@ -52,36 +52,8 @@ struct http_sig {
 
   u8* sw;                               /* Software string (U-A or Server)    */
 
-  u32 date;                             /* Parsed 'Date'                      */
   u32 recv_date;                        /* Actual receipt date                */
-
-  /* Information used for matching with p0f.fp: */
-
-  struct http_sig_record* matched;      /* NULL = no match                    */
 };
-
-/* Record for a HTTP signature read from p0f.fp: */
-
-struct http_sig_record {
-
-  s32 class_id;                         /* OS class ID (-1 = user)            */
-  s32 name_id;                          /* OS name ID                         */
-  u8* flavor;                           /* Human-readable flavor string       */
-
-  u32 label_id;                         /* Signature label ID                 */
-
-  u32* sys;                             /* OS class / name IDs for user apps  */
-  u32  sys_cnt;                         /* Length of sys                      */
-
-  u32  line_no;                         /* Line number in p0f.fp              */
-
-  u8 generic;                           /* Generic signature?                 */
-
-  struct http_sig* sig;                 /* Actual signature data              */
-
-};
-
-/* Register new HTTP signature. */
 
 struct packet_flow;
 

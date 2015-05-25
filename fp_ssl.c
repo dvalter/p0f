@@ -447,10 +447,7 @@ static void fingerprint_ssl(u8 to_srv, struct packet_flow* f,
   /* Client request only. */
   if (to_srv != 1) return;
 
-  start_observation("ssl request", 5, to_srv, f);
-
-  add_observation_field("app", NULL);
-  add_observation_field("match_sig", NULL);
+  start_observation("ssl request", 3, to_srv, f);
 
   if ((sig->flags & (SSL_FLAG_RTIME | SSL_FLAG_STIME)) == 0) {
 
