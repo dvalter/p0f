@@ -46,10 +46,26 @@ $resp = (array)json_decode(
 </table>
 <?php
 if ($resp["tcp_signature"] != "") {
+    list($ver, $ittl, $olen, $mss, $wsize/*, $scale*/, $olayout, $quirks, $pclass) = explode(":", $resp['tcp_signature']);
 ?>
     <h2>TCP Info</h2>
     <table border=1>
         <tr><td>Signature</td><td><?=$resp["tcp_signature"]?></td></tr>
+
+        <tr><td>TCP Version</td><td><?=$ver?></td></tr>
+        <tr><td>initial TTL used by the OS</td><td><?=$ittl?></td></tr>
+        <tr><td>length of IP options</td><td><?=$olen?></td></tr>
+        <tr><td>maximum segment size</td><td><?=$mss?></td></tr>
+        <tr><td>window size</td><td><?=$wsize?></td></tr>
+        <tr><td>TCP options</td><td><?=$olayout?></td></tr>
+        <tr><td>Quirks</td><td><?=$quirks?></td></tr>
+        <tr><td>payload size classification</td><td><?=$pclass?></td></tr>
+
+        <!--
+
+
+        <tr><td>Signature</td><td><?=$resp["tcp_signature"]?></td></tr>
+        -->
     </table>
 <?php
 }
