@@ -20,13 +20,6 @@ struct http_id {
   u32 id;
 };
 
-/* Another internal structure for UA -> OS maps: */
-
-struct ua_map_record {
-  u8* name;
-  u32 id;
-};
-
 /* HTTP header field: */
 
 struct http_hdr {
@@ -44,11 +37,6 @@ struct http_sig {
 
   struct http_hdr hdr[HTTP_MAX_HDRS];   /* Mandatory / discovered headers     */
   u32 hdr_cnt;
-
-  u64 hdr_bloom4;                       /* Bloom filter for headers           */
-
-  u32 miss[HTTP_MAX_HDRS];              /* Missing headers                    */
-  u32 miss_cnt;
 
   u8* sw;                               /* Software string (U-A or Server)    */
 

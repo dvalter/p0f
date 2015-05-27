@@ -37,25 +37,9 @@ static u32  hdr_cnt;                   /* Number of headers registered       */
 static u32* hdr_by_hash[SIG_BUCKETS];  /* Hashed header names                */
 static u32  hbh_cnt[SIG_BUCKETS];      /* Number of headers in bucket        */
 
-static struct ua_map_record* ua_map;   /* Mappings between U-A and OS        */
 static u32 ua_map_cnt;
 
 #define SLOF(_str) (u8*)_str, strlen((char*)_str)
-
-
-/* Ghetto Bloom filter 4-out-of-64 bitmask generator for adding 32-bit header
-   IDs to a set. We expect around 10 members in a set. */
-
-static inline u64 bloom4_64(u32 val) {
-  u32 hash = hash32(&val, 4, hash_seed);
-  u64 ret;
-  ret = (1LL << (hash & 63));
-  ret ^= (1LL << ((hash >> 8) & 63));
-  ret ^= (1LL << ((hash >> 16) & 63));
-  ret ^= (1LL << ((hash >> 24) & 63));
-  return ret;
-}
-
 
 /* Look up or register new header */
 
@@ -497,12 +481,6 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
 
       f->http_tmp.hdr[hcount].name = ck_memdup_str(pay + f->http_pos, nlen);
 
-    } else {
-
-      /* Found - update Bloom filter. */
-
-      f->http_tmp.hdr_bloom4 |= bloom4_64(hid);
-
     }
 
     /* If there's a value, store that too. For U-A and Server, also update
@@ -514,21 +492,7 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
 
       f->http_tmp.hdr[hcount].value = val;
 
-      if (to_srv) {
-
-        switch (hid) {
-          case HDR_UA: f->http_tmp.sw = val; break;
-        }
-
-      } else {
-
-        switch (hid) {
-
-          case HDR_SRV: f->http_tmp.sw = val; break;
-        }
-
-      }
-
+      if (hid == HDR_UA) f->http_tmp.sw = val;
     }
 
     /* Moving on... */
@@ -560,255 +524,162 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
 
   if (f->in_http < 0) return 0;
 
-  if (to_srv) {
+  u8* pay = f->request;
+  u8 can_get_more = (f->req_len < MAX_FLOW_DATA);
+  u32 off;
+  u32 off_proxyprotocol = 0;
+  u8 i;
+  u8 tmp[50];
 
-    u8* pay = f->request;
-    u8 can_get_more = (f->req_len < MAX_FLOW_DATA);
-    u32 off;
-    u32 off_proxyprotocol = 0;
-    u8 i;
-    u8 tmp[50];
+  /* Request done, but pending response? */
 
-    /* Request done, but pending response? */
+  if (f->http_req_done) return 1;
 
-    if (f->http_req_done) return 1;
+  if (!f->in_http) {
 
-    if (!f->in_http) {
+    u8 chr;
+    u8* sig_at;
 
-      u8 chr;
-      u8* sig_at;
+    /* Ooh, new flow! */
 
-      /* Ooh, new flow! */
+    if (f->req_len < 15) return can_get_more;
 
-      if (f->req_len < 15) return can_get_more;
+    /* Scan until \n, or until binary data spotted. */
 
-      /* Scan until \n, or until binary data spotted. */
+    off = f->http_pos;
 
-      off = f->http_pos;
+    /* We only care about GET and HEAD requests at this point. */
 
-      /* We only care about GET and HEAD requests at this point. */
+    if(!strncmp((char*)pay, "PROXY ", 6)) {
+      pay = pay + 6;
+      off_proxyprotocol = 6;
 
-      if(!strncmp((char*)pay, "PROXY ", 6)) {
-        pay = pay + 6;
-        off_proxyprotocol = 6;
+      if(!strncmp((char*)pay, "TCP4 ", 5)) {
+        if (f->req_len < 56 /* max proxy header length for ipv4 */ + 15 /* min http header length */) return can_get_more;
 
-        if(!strncmp((char*)pay, "TCP4 ", 5)) {
-          if (f->req_len < 56 /* max proxy header length for ipv4 */ + 15 /* min http header length */) return can_get_more;
+        pay = pay + 5;
+        off_proxyprotocol = off_proxyprotocol + 5;
 
-          pay = pay + 5;
-          off_proxyprotocol = off_proxyprotocol + 5;
-
-          //parse source ip address
-          memset(&tmp, 0, sizeof(tmp));
-          i=0; while(i < sizeof(tmp) && (chr = pay[i]) != ' ') { tmp[i] = pay[i]; i++; }
-          pay = pay + i + 1;
-          off_proxyprotocol = off_proxyprotocol + i + 1;
-          if (inet_pton(AF_INET, tmp, f->orig_cli_addr) <= 0) {
-            DEBUG("Could not parse destination address\n");
-            return 0;
-          }
-
-          //parse destination ip address
-          memset(&tmp, 0, sizeof(tmp));
-          i=0; while(i < sizeof(tmp) && (chr = pay[i]) != ' ') { tmp[i] = pay[i]; i++; }
-          pay = pay + i + 1;
-          off_proxyprotocol = off_proxyprotocol + i + 1;
-
-          //parse source port
-          memset(&tmp, 0, sizeof(tmp));
-          i=0; while(i < sizeof(tmp) && (chr = pay[i]) != ' ') { tmp[i] = pay[i]; i++; }
-          pay = pay + i + 1;
-          off_proxyprotocol = off_proxyprotocol + i + 1;
-          f->orig_cli_port = atoi(tmp);
-
-          //parse destination port
-          memset(&tmp, 0, sizeof(tmp));
-          i=0; while(i < sizeof(tmp) && (chr = pay[i]) != '\r') { tmp[i] = pay[i]; i++; }
-          pay = pay + i + 1;
-          off_proxyprotocol = off_proxyprotocol + i + 1;
-
-          DEBUG("[#] Found encapsulating proxy protocol v1 TCP4 originating from %s:%u\n", addr_to_str(f->orig_cli_addr, IP_VER4), f->orig_cli_port);
-
-          //skip \n
-          pay = pay + 1;
-          off_proxyprotocol = off_proxyprotocol + 1;
-
-        } else if(!strncmp((char*)pay, "TCP6 ", 5)) {
-          DEBUG("[#] Found proxy protocol v1 TCP6 which is not unsupported\n");
-          return 0;
-
-        } else {
-          DEBUG("[#] Missing TCP4, TCP6 specification for proxy protocol.\n");
-          return 0;
-        }
-      }
-
-      if (!off && strncmp((char*)pay, "GET /", 5) &&
-          strncmp((char*)pay, "HEAD /", 6)) {
-        DEBUG("[#] Does not seem like a GET / HEAD request.\n");
-        f->in_http = -1;
-        return 0;
-      }
-
-      while (off < f->req_len && off < HTTP_MAX_URL &&
-             (chr = pay[off]) != '\n') {
-
-        if (chr != '\r' && (chr < 0x20 || chr > 0x7f)) {
-
-          DEBUG("[#] Not HTTP - character 0x%02x encountered.\n", chr);
-
-          f->in_http = -1;
+        //parse source ip address
+        memset(&tmp, 0, sizeof(tmp));
+        i=0; while(i < sizeof(tmp) && (chr = pay[i]) != ' ') { tmp[i] = pay[i]; i++; }
+        pay = pay + i + 1;
+        off_proxyprotocol = off_proxyprotocol + i + 1;
+        if (inet_pton(AF_INET, tmp, f->orig_cli_addr) <= 0) {
+          DEBUG("Could not parse destination address\n");
           return 0;
         }
 
-        off++;
-  
-      }
+        //parse destination ip address
+        memset(&tmp, 0, sizeof(tmp));
+        i=0; while(i < sizeof(tmp) && (chr = pay[i]) != ' ') { tmp[i] = pay[i]; i++; }
+        pay = pay + i + 1;
+        off_proxyprotocol = off_proxyprotocol + i + 1;
 
-      /* Newline too far or too close? */
+        //parse source port
+        memset(&tmp, 0, sizeof(tmp));
+        i=0; while(i < sizeof(tmp) && (chr = pay[i]) != ' ') { tmp[i] = pay[i]; i++; }
+        pay = pay + i + 1;
+        off_proxyprotocol = off_proxyprotocol + i + 1;
+        f->orig_cli_port = atoi(tmp);
 
-      if (off == HTTP_MAX_URL || off < 14) {
+        //parse destination port
+        memset(&tmp, 0, sizeof(tmp));
+        i=0; while(i < sizeof(tmp) && (chr = pay[i]) != '\r') { tmp[i] = pay[i]; i++; }
+        pay = pay + i + 1;
+        off_proxyprotocol = off_proxyprotocol + i + 1;
 
-        DEBUG("[#] Not HTTP - newline offset %u.\n", off);
+        DEBUG("[#] Found encapsulating proxy protocol v1 TCP4 originating from %s:%u\n", addr_to_str(f->orig_cli_addr, IP_VER4), f->orig_cli_port);
 
-        f->in_http = -1;
+        //skip \n
+        pay = pay + 1;
+        off_proxyprotocol = off_proxyprotocol + 1;
+
+      } else if(!strncmp((char*)pay, "TCP6 ", 5)) {
+        DEBUG("[#] Found proxy protocol v1 TCP6 which is not unsupported\n");
         return 0;
 
-      }
-
-      /* Not enough data yet? */
-
-      if (off == f->req_len) {
-
-        f->http_pos = off;
-
-        if (!can_get_more) {
-
-          DEBUG("[#] Not HTTP - no opening line found.\n");
-          f->in_http = -1;
-
-        }
-
-        return can_get_more;
-
-      }
-
-      sig_at = pay + off - 8;
-      if (pay[off - 1] == '\r') sig_at--;
-
-      /* Bad HTTP/1.x signature? */
-
-      if (strncmp((char*)sig_at, "HTTP/1.", 7)) {
-
-        DEBUG("[#] Not HTTP - bad signature.\n");
-
-        f->in_http = -1;
+      } else {
+        DEBUG("[#] Missing TCP4, TCP6 specification for proxy protocol.\n");
         return 0;
-
       }
-
-      f->http_tmp.http_ver = (sig_at[7] == '1');
-
-      f->in_http  = 1;
-      f->http_pos = off + 1;
-
-      DEBUG("[#] HTTP detected.\n");
-
     }
 
-    f->http_pos = f->http_pos + off_proxyprotocol;
-
-    return parse_pairs(1, f, can_get_more);
-
-  } else {
-
-    u8* pay = f->response;
-    u8 can_get_more = (f->resp_len < MAX_FLOW_DATA);
-    u32 off;
-
-    /* Response before request? Bail out. */
-
-    if (!f->in_http || !f->http_req_done) {
+    if (!off && strncmp((char*)pay, "GET /", 5) &&
+        strncmp((char*)pay, "HEAD /", 6)) {
+      DEBUG("[#] Does not seem like a GET / HEAD request.\n");
       f->in_http = -1;
       return 0;
     }
 
-    if (!f->http_gotresp1) {
+    while (off < f->req_len && off < HTTP_MAX_URL &&
+           (chr = pay[off]) != '\n') {
 
-      u8 chr;
+      if (chr != '\r' && (chr < 0x20 || chr > 0x7f)) {
 
-      if (f->resp_len < 13) return can_get_more;
-
-      /* Scan until \n, or until binary data spotted. */
-
-      off = f->http_pos;
-
-      while (off < f->resp_len && off < HTTP_MAX_URL &&
-             (chr = pay[off]) != '\n') {
-
-        if (chr != '\r' && (chr < 0x20 || chr > 0x7f)) {
-
-          DEBUG("[#] Invalid HTTP response - character 0x%02x encountered.\n",
-                chr);
-          f->in_http = -1;
-          return 0;
-
-        }
-
-        off++;
-  
-      }
-
-      /* Newline too far or too close? */
-
-      if (off == HTTP_MAX_URL || off < 13) {
-
-        DEBUG("[#] Invalid HTTP response - newline offset %u.\n", off);
+        DEBUG("[#] Not HTTP - character 0x%02x encountered.\n", chr);
 
         f->in_http = -1;
         return 0;
-
       }
 
-      /* Not enough data yet? */
-
-      if (off == f->resp_len) {
-
-        f->http_pos = off;
-
-        if (!can_get_more) {
-
-          DEBUG("[#] Invalid HTTP response - no opening line found.\n");
-          f->in_http = -1;
-
-        }
-
-        return can_get_more;
-
-      }
-
-      /* Bad HTTP/1.x signature? */
-
-      if (strncmp((char*)pay, "HTTP/1.", 7)) {
-
-        DEBUG("[#] Invalid HTTP response - bad signature.\n");
-
-        f->in_http = -1;
-        return 0;
-
-      }
-
-      f->http_tmp.http_ver = (pay[7] == '1');
-
-      f->http_pos = off + 1;
-
-      DEBUG("[#] HTTP response starts correctly.\n");
-
+      off++;
 
     }
 
-    return parse_pairs(0, f, can_get_more);
+    /* Newline too far or too close? */
+
+    if (off == HTTP_MAX_URL || off < 14) {
+
+      DEBUG("[#] Not HTTP - newline offset %u.\n", off);
+
+      f->in_http = -1;
+      return 0;
+
+    }
+
+    /* Not enough data yet? */
+
+    if (off == f->req_len) {
+
+      f->http_pos = off;
+
+      if (!can_get_more) {
+
+        DEBUG("[#] Not HTTP - no opening line found.\n");
+        f->in_http = -1;
+
+      }
+
+      return can_get_more;
+
+    }
+
+    sig_at = pay + off - 8;
+    if (pay[off - 1] == '\r') sig_at--;
+
+    /* Bad HTTP/1.x signature? */
+
+    if (strncmp((char*)sig_at, "HTTP/1.", 7)) {
+
+      DEBUG("[#] Not HTTP - bad signature.\n");
+
+      f->in_http = -1;
+      return 0;
+
+    }
+
+    f->http_tmp.http_ver = (sig_at[7] == '1');
+
+    f->in_http  = 1;
+    f->http_pos = off + 1;
+
+    DEBUG("[#] HTTP detected.\n");
 
   }
+
+  f->http_pos = f->http_pos + off_proxyprotocol;
+
+  return parse_pairs(1, f, can_get_more);
 
 }
