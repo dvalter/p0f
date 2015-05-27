@@ -1,5 +1,4 @@
 <?php
-require_once('p0f_constants.php');
 $QUERY_IP = array_key_exists('ip', $_REQUEST) ? $_REQUEST['ip'] : $_SERVER['REMOTE_ADDR'];
 ?>
 <html>
@@ -15,7 +14,7 @@ error_reporting(E_ALL);
 $tlsExtensions          = require('tls_extensions.inc.php');
 $tlsCipherSuiteRegistry = require('tls_cipher_suite_registry.inc.php');
 $tcpSignatures          = require('tcp_signatures.php');
-$mtuSignatures          = require('mtu.php');
+$mtuSignatures          = require('mtu_signatures.php');
 
 ob_end_flush();
 ob_implicit_flush(true);
