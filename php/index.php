@@ -103,6 +103,7 @@ if (trim($resp["ssl_signature"]) != "") {
     ?>
 <h2>SSL Info</h2>
 <table border=1>
+    <tr><td>SSL Signature</td><td><?=$resp["ssl_signature"]?></td></tr>
     <tr><td>Version</td><td><?=$sslver?></td></tr>
     <tr><td>Ciphers</td><td><?=$ciphers?></td></tr>
     <tr><td>Extensions</td><td><?=$extensions?></td></tr>
