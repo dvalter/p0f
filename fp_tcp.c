@@ -42,67 +42,6 @@ static u8 guess_dist(u8 ttl) {
   return 255 - ttl;
 }
 
-
-/* Figure out if window size is a multiplier of MSS or MTU. We don't take window
-   scaling into account, because neither do TCP stack developers. */
-
-static s16 detect_win_multi(struct tcp_sig* ts, u8* use_mtu, u16 syn_mss) {
-
-  u16 win = ts->win;
-  s32 mss = ts->mss, mss12 = mss - 12;
-
-  if (!win || mss < 100 || ts->win_type != WIN_TYPE_NORMAL)
-    return -1;
-
-#define RET_IF_DIV(_div, _use_mtu, _desc) do { \
-    if ((_div) && !(win % (_div))) { \
-      *use_mtu = (_use_mtu); \
-      DEBUG("[#] Window size %u is a multiple of %s [%u].\n", win, _desc, _div); \
-      return win / (_div); \
-    } \
-  } while (0)
-
-  RET_IF_DIV(mss, 0, "MSS");
-
-  /* Some systems will sometimes subtract 12 bytes when timestamps are in use. */
-
-  if (ts->ts1) RET_IF_DIV(mss12, 0, "MSS - 12");
-
-  /* Some systems use MTU on the wrong interface, so let's check for the most
-     common case. */
-
-  RET_IF_DIV(1500 - MIN_TCP4, 0, "MSS (MTU = 1500, IPv4)");
-  RET_IF_DIV(1500 - MIN_TCP4 - 12, 0, "MSS (MTU = 1500, IPv4 - 12)");
-
-  if (ts->ip_ver == IP_VER6) {
-
-    RET_IF_DIV(1500 - MIN_TCP6, 0, "MSS (MTU = 1500, IPv6)");
-    RET_IF_DIV(1500 - MIN_TCP6 - 12, 0, "MSS (MTU = 1500, IPv6 - 12)");
-
-  }
-
-  /* Some systems use MTU instead of MSS: */
-
-  RET_IF_DIV(mss + MIN_TCP4, 1, "MTU (IPv4)");
-  RET_IF_DIV(mss + ts->tot_hdr, 1, "MTU (actual size)");
-  if (ts->ip_ver == IP_VER6) RET_IF_DIV(mss + MIN_TCP6, 1, "MTU (IPv6)");
-  RET_IF_DIV(1500, 1, "MTU (1500)");
-
-  /* On SYN+ACKs, some systems use of the peer: */
-
-  if (syn_mss) {
-
-    RET_IF_DIV(syn_mss, 0, "peer MSS");
-    RET_IF_DIV(syn_mss - 12, 0, "peer MSS - 12");
-
-  }
-
-#undef RET_IF_DIV
-
-  return -1;
-
-}
-
 /* Convert struct packet_data to a simplified struct tcp_sig representation
    suitable for signature matching. Compute hashes. */
 
@@ -151,13 +90,6 @@ static u8* dump_sig(struct packet_data* pk, struct tcp_sig* ts, u16 syn_mss) {
   } while (0)
 
   RETF("%u:%u:", pk->ip_ver, (pk->ttl + dist));
-
-  win_m = detect_win_multi(ts, &win_mtu, syn_mss);
-
-  if (win_m > 0) RETF("%s*%u", win_mtu ? "mtu" : "mss", win_m);
-  else RETF("%u", pk->win);
-
-  RETF(",%u:", pk->wscale);
 
   for (i = 0; i < pk->opt_cnt; i++) {
 

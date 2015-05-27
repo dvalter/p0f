@@ -14,6 +14,7 @@ error_reporting(E_ALL);
 
 $tlsExtensions          = require('tls_extensions.inc.php');
 $tlsCipherSuiteRegistry = require('tls_cipher_suite_registry.inc.php');
+$tcpSignatures          = require('tcp_signatures.php');
 
 ob_end_flush();
 ob_implicit_flush(true);
@@ -25,6 +26,7 @@ $resp = (array)json_decode(
 ?>
 <h2>Fingerprint Match</h2>
 <table border="1">
+    <tr><td>TCP fingerprint OS guess</td><td><?=array_key_exists($resp["tcp_signature"], $tcpSignatures) ? $tcpSignatures[$resp["tcp_signature"]] : 'Unknown' ?></td></tr>
 <?php foreach ($resp as $key => $value) {
     if(in_array($key, array(
         'http_signature', 'ssl_signature', 'ssl_remote_time', 'tcp_signature'
@@ -46,15 +48,14 @@ $resp = (array)json_decode(
 </table>
 <?php
 if ($resp["tcp_signature"] != "") {
-    list($ver, $ittl, $wsize/*, $scale*/, $olayout, $quirks) = explode(":", $resp['tcp_signature']);
+    list($ver, $ittl, $olayout, $quirks) = explode(":", $resp['tcp_signature']);
 ?>
     <h2>TCP Info</h2>
     <table border=1>
-        <tr><td>Signature</td><td><?=$resp["tcp_signature"]?></td></tr>
+        <tr><td>TCP Signature</td><td><?=$resp["tcp_signature"]?></td></tr>
 
-        <tr><td>TCP Version</td><td><?=$ver?></td></tr>
-        <tr><td>initial TTL used by the OS</td><td><?=$ittl?></td></tr>
-        <tr><td>window size</td><td><?=$wsize?></td></tr>
+        <tr><td>IP Version</td><td><?=$ver?></td></tr>
+        <tr><td>Initial TTL used by the OS</td><td><?=$ittl?></td></tr>
         <tr><td>TCP options</td><td><?=$olayout?></td></tr>
         <tr><td>Quirks</td><td><?=$quirks?></td></tr>
     </table>
@@ -103,5 +104,4 @@ if (trim($resp["ssl_signature"]) != "") {
 
 <?php
 }
-
 ?>
