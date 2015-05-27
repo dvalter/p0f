@@ -20,7 +20,7 @@ ob_end_flush();
 ob_implicit_flush(true);
 
 $resp = (array)json_decode(
-    file_get_contents("http://127.0.0.1:1337/?ip=" . $QUERY_IP . "&ip_version=4")
+    file_get_contents("http://127.0.0.1:1338/?ip=" . $QUERY_IP . "&ip_version=4")
 );
 
 ?>
