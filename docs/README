@@ -514,6 +514,11 @@ by userspace TCP tools.
 
 For TCP traffic, signature layout is as follows:
 
+sig   = *:128:0:*:8192,0:mss,nop,nop,sok:df,id+:0
+sig   = *:128:0:*:8192,2:mss,nop,ws,nop,nop,sok:df,id+:0
+sig   = *:128:0:*:8192,8:mss,nop,ws,nop,nop,sok:df,id+:0
+sig   = *:128:0:*:8192,2:mss,nop,ws,sok,ts:df,id+:0
+
 sig = ver:ittl:olen:mss:wsize,scale:olayout:quirks:pclass
 
   ver        - signature for IPv4 ('4'), IPv6 ('6'), or both ('*').
@@ -537,23 +542,6 @@ sig = ver:ittl:olen:mss:wsize,scale:olayout:quirks:pclass
                A handful of userspace tools will generate random TTLs. In these
                cases, determine maximum initial TTL and then add a - suffix to
                the value to avoid confusion.
-
-  olen       - length of IPv4 options or IPv6 extension headers. Usually zero
-               for normal IPv4 traffic; always zero for IPv6 due to the
-               limitations of libpcap.
-
-               NEW SIGNATURES: Copy p0f output literally.
-
-  mss        - maximum segment size, if specified in TCP options. Special value
-               of '*' can be used to denote that MSS varies depending on the
-               parameters of sender's network link, and should not be a part of
-               the signature. In this case, MSS will be used to guess the
-               type of network hookup according to the [mtu] rules.
-
-               NEW SIGNATURES: Use '*' for any commodity OSes where MSS is
-               around 1300 - 1500, unless you know for sure that it's fixed.
-               If the value is outside that range, you can probably copy it
-               literally.
 
   wsize      - window size. Can be expressed as a fixed value, but many
                operating systems set it to a multiple of MSS or MTU, or a
@@ -614,12 +602,6 @@ sig = ver:ittl:olen:mss:wsize,scale:olayout:quirks:pclass
                for just one of these protocols, such quirks will be ignored for
                on packets using the other protocol. For example, any combination
                of 'df', 'id+', and 'id-' is always matched by any IPv6 packet.
-
-               NEW SIGNATURES: Copy literally.
-
-  pclass     - payload size classification: '0' for zero, '+' for non-zero,
-               '*' for any. The packets we fingerprint right now normally have
-               no payloads, but some corner cases exist.
 
                NEW SIGNATURES: Copy literally.
 

@@ -150,21 +150,7 @@ static u8* dump_sig(struct packet_data* pk, struct tcp_sig* ts, u16 syn_mss) {
     rlen += _len; \
   } while (0)
 
-  if (dist > MAX_DIST) {
-
-    RETF("%u:%u+?:%u:", pk->ip_ver, pk->ttl, pk->ip_opt_len);
-
-  } else {
-
-    RETF("%u:%u+%u:%u:", pk->ip_ver, pk->ttl, dist, pk->ip_opt_len);
-
-  }
-
-  /* Detect a system echoing back MSS from p0f-sendsyn queries, suggest using
-     a wildcard in such a case. */
-
-  if (pk->mss == SPECIAL_MSS && pk->tcp_type == (TCP_SYN|TCP_ACK)) RETF("*:");
-  else RETF("%u:", pk->mss);
+  RETF("%u:%u:", pk->ip_ver, (pk->ttl + dist));
 
   win_m = detect_win_multi(ts, &win_mtu, syn_mss);
 
@@ -239,8 +225,6 @@ static u8* dump_sig(struct packet_data* pk, struct tcp_sig* ts, u16 syn_mss) {
 #undef MAYBE_CM
 
   }
-
-  if (pk->pay_len) RETF(":+"); else RETF(":0");
 
   return ret;
 
