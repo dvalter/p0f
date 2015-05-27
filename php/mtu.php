@@ -35,4 +35,5 @@ return array(
     3924     => 'loopback',
     16384    => 'loopback',
     16436    => 'loopback',
+    65535    => 'loopback'
 );
