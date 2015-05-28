@@ -68,7 +68,9 @@ static u8 *use_iface,                   /* Interface to listen on             */
           *orig_rule,                   /* Original filter rule               */
           *switch_user,                 /* Target username                    */
           *log_file,                    /* Binary log file name               */
-          *read_file;                   /* File to read pcap data from        */
+          *read_file,                   /* File to read pcap data from        */
+          *http_auth,                   /* HTTP username and password         */
+          *http_auth_base64;            /* base64 encoded username and passwd */
 
 static u16 api_port;                    /* TCP Port of the API */
 
@@ -123,18 +125,19 @@ static void usage(void) {
 "\n"
 "Network interface options:\n"
 "\n"
-"  -i iface  - listen on the specified network interface\n"
-"  -r file   - read offline pcap data from a given file\n"
-"  -p        - put the listening interface in promiscuous mode\n"
-"  -L        - list all available interfaces\n"
+"  -i iface     - listen on the specified network interface\n"
+"  -r file      - read offline pcap data from a given file\n"
+"  -p           - put the listening interface in promiscuous mode\n"
+"  -L           - list all available interfaces\n"
 "\n"
 "Operating mode and output settings:\n"
 "\n"
-"  -o file   - write information to the specified log file\n"
-"  -P port   - answer to API queries at the given TCP port\n"
-"  -u user   - switch to the specified unprivileged account and chroot\n"
-"  -d        - fork into background (requires -o or -s)\n"
-"  -v        - enable verbose output (only available if we run in foreground)\n"
+"  -o file      - write information to the specified log file\n"
+"  -P port      - answer to API queries with HTTP JSON at the given TCP port\n"
+"  -a user:pass - enables http basic authentification with the specified credentials\n"
+"  -u user      - switch to the specified unprivileged account and chroot\n"
+"  -d           - fork into background (requires -o or -s)\n"
+"  -v           - enable verbose output (only available if we run in foreground)\n"
 "\n"
 "Performance-related options:\n"
 "\n"
@@ -1019,7 +1022,7 @@ int main(int argc, char** argv) {
   if (getuid() != geteuid())
     FATAL("Please don't make me setuid. See README for more.\n");
 
-  while ((r = getopt(argc, argv, "+LS:di:m:o:pr:P:t:u:v")) != -1) switch (r) {
+  while ((r = getopt(argc, argv, "+LS:di:m:o:pr:P:t:u:va:")) != -1) switch (r) {
 
     case 'L':
 
@@ -1046,6 +1049,15 @@ int main(int argc, char** argv) {
 
 #endif /* ^__CYGWIN__ */
 
+    case 'a':
+      if (http_auth)
+        FATAL("Multiple -a options not supported.");
+
+      http_auth = (u8*)optarg;
+
+      http_auth_base64 = ck_alloc(Base64encode_len(strlen(http_auth) + 1));
+      Base64encode(http_auth_base64, http_auth, strlen(http_auth));
+      break;
 
     case 'd':
 
