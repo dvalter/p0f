@@ -83,7 +83,6 @@ s32 handle_query(u8* q, u8* r) {
   char query_string[HTTP_MAX_URL];
   char version[HTTP_MAX_URL];
 
-  char param_ip_version[HTTP_MAX_URL];
   char param_ip[HTTP_MAX_URL];
 
   char tmp[HTTP_MAX_URL];
@@ -95,11 +94,10 @@ s32 handle_query(u8* q, u8* r) {
 	  return -1;
   }
 
-
   response_start = r;
 
   memset(r, 0, HTTP_SERVER_OUTPUT_BUFFER_SIZE);
-
+  memset(param_ip, 0, HTTP_MAX_URL);
 
   sscanf(q, "%s %s %s\n", method, uri, version);
 
@@ -121,6 +119,8 @@ s32 handle_query(u8* q, u8* r) {
     strcpy(query_string, "");
   }
 
+  DEBUG("[API] Query String: %s\n", query_string);
+
   // we only support / as uri
   if (strcasecmp(uri, "/")) {
     r = append(r, http_404_response);
@@ -131,43 +131,34 @@ s32 handle_query(u8* q, u8* r) {
   p = strtok(query_string, "&");
 
   while (p != NULL) {
-    p2 = strchr(p, '=');
-    if (p2) {
-	  strcpy(tmp, p2+1);
-	  *p2 = '\0';
+      p2 = strchr(p, '=');
+      if (p2) {
+        strcpy(tmp, p2+1);
+        *p2 = '\0';
 
-      if (!strcasecmp(p, "ip_version")) {
-        strcpy(param_ip_version, tmp);
-
-      } else if (!strcasecmp(p, "ip")) {
-
-        strcpy(param_ip, tmp);
+        if (!strcasecmp(p, "ip")) {
+          strcpy(param_ip, tmp);
+        }
       }
-    }
 
-    p = strtok(NULL, "&");
+      p = strtok(NULL, "&");
   }
 
-  DEBUG("[API] API Request for ip_version: %s, ip: %s\n", param_ip_version, param_ip);
+  p2 = strchr(param_ip, ':');
 
-  if (strcmp(param_ip_version, "4") == 0 ||
-      strcmp(param_ip_version, "6") == 0 ) {
+  //only ipv4 supported atm
+  ip_ver = (p2) ? IP_VER6 : IP_VER4;
 
-    ip_ver = (strcmp(param_ip_version, "4") == 0) ? IP_VER4 : IP_VER6;
+  DEBUG("[API] API Request for ip_version: %s, ip: %s\n", (ip_ver == IP_VER4) ? "4" : "6", param_ip);
 
-    if (inet_pton(
-        (ip_ver == IP_VER4) ? AF_INET : AF_INET6,
-        param_ip,
-        cli_addr) <= 0) {
-      r = append(r, http_500_response);
-      r = append(r, "Could not parse ip address from ip parameter");
-      return r - response_start;
-    }
 
-  } else {
-      r = append(r, http_500_response);
-      r = append(r, "wrong/missing ip_version");
-      return r - response_start;
+  if (inet_pton(
+      AF_INET,
+      param_ip,
+      cli_addr) <= 0) {
+    r = append(r, http_500_response);
+    r = append(r, "Could not parse ip address from ip parameter");
+    return r - response_start;
   }
 
   h = lookup_host(cli_addr, ip_ver);
