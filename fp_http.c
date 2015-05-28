@@ -101,20 +101,8 @@ void http_init(void) {
   }
 
   i = 0;
-  while (resp_optional[i].name) {
-    resp_optional[i].id = lookup_hdr(SLOF(resp_optional[i].name), 1);
-    i++;
-  }
-
-  i = 0;
   while (req_skipval[i].name) {
     req_skipval[i].id = lookup_hdr(SLOF(req_skipval[i].name), 1);
-    i++;
-  }
-
-  i = 0;
-  while (resp_skipval[i].name) {
-    resp_skipval[i].id = lookup_hdr(SLOF(resp_skipval[i].name), 1);
     i++;
   }
 
@@ -123,13 +111,6 @@ void http_init(void) {
     req_common[i].id = lookup_hdr(SLOF(req_common[i].name), 1);
     i++;
   }
-
-  i = 0;
-  while (resp_common[i].name) {
-    resp_common[i].id = lookup_hdr(SLOF(resp_common[i].name), 1);
-    i++;
-  }
-
 }
 
 /* Dump a HTTP signature. */
@@ -166,7 +147,7 @@ static u8* dump_sig(u8 to_srv, struct http_sig* hsig) {
 
       /* Check the "optional" list. */
 
-      list = to_srv ? req_optional : resp_optional;
+      list = req_optional;
 
       while (list->name) {
         if (list->id == hsig->hdr[i].id) break;
@@ -185,7 +166,7 @@ static u8* dump_sig(u8 to_srv, struct http_sig* hsig) {
 
       if (optional) continue;
 
-      list = to_srv ? req_skipval : resp_skipval;
+      list = req_skipval;
 
       while (list->name) {
         if (list->id == hsig->hdr[i].id) break;
@@ -237,7 +218,7 @@ static u8* dump_sig(u8 to_srv, struct http_sig* hsig) {
 
   RETF(":");
 
-  list = to_srv ? req_common : resp_common;
+  list = req_common;
   had_prev = 0;
 
   while (list->name) {

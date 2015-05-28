@@ -199,22 +199,6 @@ static struct http_id req_optional[] = {
   { 0, 0 }
 };
 
-static struct http_id resp_optional[] = {
-  { "Set-Cookie", 0 },
-  { "Last-Modified", 0 },
-  { "ETag", 0 },
-  { "Content-Length", 0 },
-  { "Content-Disposition", 0 },
-  { "Cache-Control", 0 },
-  { "Expires", 0 },
-  { "Pragma", 0 },
-  { "Location", 0 },
-  { "Refresh", 0 },
-  { "Content-Range", 0 },
-  { "Vary", 0 },
-  { 0, 0 }
-};
-
 /* Common headers that are expected to be present at all times, and deserve
    a special mention if absent in a signature: */
 
@@ -230,15 +214,6 @@ static struct http_id req_common[] = {
   { 0, 0 }
 };
 
-static struct http_id resp_common[] = {
-  { "Content-Type", 0 },
-  { "Connection", 0 },
-  { "Keep-Alive", 0 },
-  { "Accept-Ranges", 0 },
-  { "Date", 0 },
-  { 0, 0 }
-};
-
 /* Headers for which values change depending on the context, and therefore
    should not be included in proposed signatures. This is on top of the
    "optional" header lists, which already implies skipping the value. */
@@ -246,13 +221,6 @@ static struct http_id resp_common[] = {
 static struct http_id req_skipval[] = {
   { "Host", 0 },
   { "User-Agent", 0 },
-  { 0, 0 }
-};
-
-static struct http_id resp_skipval[] = {
-  { "Date", 0 },
-  { "Content-Type", 0 },
-  { "Server", 0 },
   { 0, 0 }
 };
 
