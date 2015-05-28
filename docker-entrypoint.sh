@@ -19,6 +19,12 @@ if [ "$1" == "/opt/p0f/bin/p0f" ]; then
 		POF_OPTS+=" -i ${INTERFACE}"
 	fi
 
+	if [ ! -z "${HTTP_CREDENTIALS}" ]; then
+		POF_OPTS+=" -a ${HTTP_CREDENTIALS}"
+	fi
+
+
+
 	POF_OPTS+=" -P ${API_PORT}"
 	POF_OPTS+=" -S ${PARALLEL_API_CONNECTIONS}"
 
