@@ -109,7 +109,7 @@ void http_init(void) {
 
 /* Dump a HTTP signature. */
 
-static u8* dump_sig(u8 to_srv, struct http_sig* hsig) {
+static u8* dump_sig(struct http_sig* hsig) {
 
   u32 i;
   u8 had_prev = 0;
@@ -232,15 +232,15 @@ static u8* dump_sig(u8 to_srv, struct http_sig* hsig) {
 
 /* Look up HTTP signature, create an observation. */
 
-static void fingerprint_http(u8 to_srv, struct packet_flow* f) {
+static void extract_http_request_signature(struct packet_flow* f) {
   u8* p;
   u8* http_signature;
   struct host_data* client;
 
 
-  http_signature = dump_sig(to_srv, &f->http_tmp);
+  http_signature = dump_sig(&f->http_tmp);
 
-  start_observation(to_srv ? "http request" : "http response", 1, to_srv, f);
+  start_observation("http request", 1, 1, f);
   add_observation_field("http_signature", http_signature);
 
   if(!f->orig_cli_port) {
@@ -287,7 +287,7 @@ void free_sig_hdrs(struct http_sig* h) {
 
 static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
 
-  u32 plen = to_srv ? f->req_len : f->resp_len;
+  u32 plen = f->req_len;
 
   u32 off;
 
@@ -295,7 +295,7 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
 
   while ((off = f->http_pos) < plen) {
 
-    u8* pay = to_srv ? f->request : f->response;
+    u8* pay = f->request;
 
     u32 nlen, vlen, vstart;
     s32 hid;
@@ -307,28 +307,19 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
 
       f->http_tmp.recv_date = get_unix_time();
 
-      fingerprint_http(to_srv, f);
+      extract_http_request_signature(f);
 
-      /* If this is a request, flush the collected signature and prepare
-         for parsing the response. If it's a response, just shut down HTTP
-         parsing on this flow. */
+      f->http_req_done = 1;
+      f->http_pos = 0;
 
-      if (to_srv) {
+      free_sig_hdrs(&f->http_tmp);
+      memset(&f->http_tmp, 0, sizeof(struct http_sig));
 
-        f->http_req_done = 1;
-        f->http_pos = 0;
+      f->in_http = -1;
 
-        free_sig_hdrs(&f->http_tmp);
-        memset(&f->http_tmp, 0, sizeof(struct http_sig));
+      //end parsing on this flow after request header were processed
+      return 0;
 
-        return 1;
-
-      } else {
-
-        f->in_http = -1;
-        return 0;
-
-      }
 
     }
 
