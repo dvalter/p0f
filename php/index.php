@@ -31,8 +31,8 @@ if(count($resp) == 0) {
 ?>
 <h2>Fingerprint Matching</h2>
 <table border="1">
-    <tr><td>OS guess (based on TCP data)</td><td><?=array_key_exists($resp["tcp_signature"], $tcpSignatures) ? $tcpSignatures[$resp["tcp_signature"]] : 'Unknown' ?></td></tr>
-    <tr><td>Link guess (based on MTU)</td><td><?=array_key_exists($resp['mtu'], $mtuSignatures) ? $mtuSignatures[$resp['mtu']] : 'Unknown' ?></td></tr>
+    <tr><td>OS guess (based on TCP data)</td><td><?=array_key_exists($resp["fp_tcp_signature"], $tcpSignatures) ? $tcpSignatures[$resp["fp_tcp_signature"]] : 'Unknown' ?></td></tr>
+    <tr><td>Link guess (based on MTU)</td><td><?=array_key_exists($resp['fp_mtu'], $mtuSignatures) ? $mtuSignatures[$resp['fp_mtu']] : 'Unknown' ?></td></tr>
 </table>
 
 <h2>Connection Info</h2>
@@ -40,10 +40,10 @@ if(count($resp) == 0) {
 
 <?php foreach ($resp as $key => $value) {
     if(in_array($key, array(
-        'http_signature', 'ssl_signature', 'ssl_remote_time', 'tcp_signature'
+        'fp_http_signature', 'fp_ssl_signature', 'fp_ssl_remote_time', 'fp_tcp_signature'
     ))) continue;
 
-    if(in_array($key, array('first_seen', 'last_seen', 'ssl_remote_time'))) {
+    if(in_array($key, array('fp_first_seen', 'fp_last_seen', 'fp_ssl_remote_time'))) {
         if($value == 0) {
             $value = "";
         } else {
@@ -58,12 +58,12 @@ if(count($resp) == 0) {
 ?>
 </table>
 <?php
-if ($resp["tcp_signature"] != "") {
-    list($ver, $ittl, $olayout, $quirks) = explode("|", $resp['tcp_signature']);
+if ($resp["fp_tcp_signature"] != "") {
+    list($ver, $ittl, $olayout, $quirks) = explode("|", $resp['fp_tcp_signature']);
 ?>
     <h2>TCP Info</h2>
     <table border=1>
-        <tr><td>TCP Signature</td><td><?=$resp["tcp_signature"]?></td></tr>
+        <tr><td>TCP Signature</td><td><?=$resp["fp_tcp_signature"]?></td></tr>
         <tr><td>IP Version</td><td><?=$ver?></td></tr>
         <tr><td>Initial TTL used by the OS</td><td><?=$ittl?></td></tr>
         <tr><td>TCP options</td><td><?=$olayout?></td></tr>
@@ -72,23 +72,22 @@ if ($resp["tcp_signature"] != "") {
 <?php
 }
 
-if (trim($resp["http_signature"]) != "") {
-    list($ver, $horder, $expsw) = explode("|", $resp['http_signature']);
+if (trim($resp["fp_http_signature"]) != "") {
+    list($ver, $horder) = explode("|", $resp['fp_http_signature']);
 
     $horder = preg_replace("/,(?![^\[\]]*\])/", "<br/>", $horder);
 ?>
     <h2>HTTP Info</h2>
     <table border=1>
-        <tr><td>HTTP Signature</td><td><?=$resp["http_signature"]?></td></tr>
+        <tr><td>HTTP Signature</td><td><?=$resp["fp_http_signature"]?></td></tr>
         <tr><td>Version</td><td>HTTP <?=$ver?></td></tr>
-        <tr><td>Present Headers</td><td><?=$horder?></td></tr>
-        <tr><td>User-Agent</td><td><?=$expsw?></td></tr>
+        <tr><td>Ordered Header names</td><td><?=$horder?></td></tr>
     </table>
 <?php
 }
 
-if (trim($resp["ssl_signature"]) != "") {
-    list($sslver, $ciphers, $extensions, $sslflags) = explode("|", $resp['ssl_signature']);
+if (trim($resp["fp_ssl_signature"]) != "") {
+    list($sslver, $ciphers, $extensions, $sslflags) = explode("|", $resp['fp_ssl_signature']);
 
     $ciphers = implode("<br/>",array_map(function($cipher) use ($tlsCipherSuiteRegistry) {
         $cipher = hexdec($cipher);
@@ -103,7 +102,7 @@ if (trim($resp["ssl_signature"]) != "") {
     ?>
 <h2>SSL Info</h2>
 <table border=1>
-    <tr><td>SSL Signature</td><td><?=$resp["ssl_signature"]?></td></tr>
+    <tr><td>SSL Signature</td><td><?=$resp["fp_ssl_signature"]?></td></tr>
     <tr><td>Version</td><td><?=$sslver?></td></tr>
     <tr><td>Ciphers</td><td><?=$ciphers?></td></tr>
     <tr><td>Extensions</td><td><?=$extensions?></td></tr>

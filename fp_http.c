@@ -121,6 +121,9 @@ static u8* dump_sig(struct http_sig* hsig) {
   static u8* ret;
   u32 rlen = 0;
 
+  u8 only_header_names = 1;
+
+
   u8* val;
 
 #define RETF(_par...) do { \
@@ -150,7 +153,7 @@ static u8* dump_sig(struct http_sig* hsig) {
 
       if (list->name) optional = 1;
 
-      RETF("%s%s%s", had_prev ? "," : "", optional ? "?" : "",
+      RETF("%s%s%s", had_prev ? "," : "", (!only_header_names && optional) ? "?" : "",
            hdr_names[hsig->hdr[i].id]);
       had_prev = 1;
 
@@ -158,7 +161,7 @@ static u8* dump_sig(struct http_sig* hsig) {
 
       /* Next, make sure that the value is not on the ignore list. */
 
-      if (optional) continue;
+      if (only_header_names || optional) continue;
 
       list = req_skipval;
 
@@ -195,6 +198,9 @@ static u8* dump_sig(struct http_sig* hsig) {
 
       if (!(val = hsig->hdr[i].value)) continue;
 
+      if (only_header_names) continue;
+
+
       tpos = 0;
 
       while (tpos < HTTP_MAX_SHOW && val[tpos] >= 0x20 && val[tpos] < 0x80 &&
@@ -210,19 +216,21 @@ static u8* dump_sig(struct http_sig* hsig) {
 
   }
 
-  RETF("|");
+  if(!only_header_names) {
+    RETF("|");
 
-  if ((val = hsig->sw)) {
+    if ((val = hsig->sw)) {
 
-    tpos = 0;
+      tpos = 0;
 
-    while (tpos < HTTP_MAX_SHOW &&  val[tpos] >= 0x20 && val[tpos] < 0x80 &&
-           val[tpos] != ']') { tmp[tpos] = val[tpos]; tpos++; }
+      while (tpos < HTTP_MAX_SHOW &&  val[tpos] >= 0x20 && val[tpos] < 0x80 &&
+             val[tpos] != ']') { tmp[tpos] = val[tpos]; tpos++; }
 
-    tmp[tpos] = 0;
+      tmp[tpos] = 0;
 
-    if (tpos) RETF("%s", tmp);
+      if (tpos) RETF("%s", tmp);
 
+    }
   }
 
   return ret;
