@@ -1,4 +1,19 @@
 
+
+
+
+CAUTION:  This is not the original p0f software. This repository contains a highly modified version of p0f.
+
+Please check the original author's website if you're in search for the original p0f application.
+
+
+
+
+
+
+
+
+
                         =============================
                         p0f v3: passive fingerprinter
                         =============================
@@ -279,122 +294,17 @@ that fails, try this URL:
 Filters work both for online capture (-i) and for previously collected data
 produced by any other tool (-r).
 
--------------
-4. API access
--------------
-
-The API allows other applications running on the same system to get p0f's
-current opinion about a particular host. This is useful for integrating it with
-spam filters, web apps, and so on.
-
-Clients are welcome to connect to the unix socket specified with -s using the
-SOCK_STREAM protocol, and may issue any number of fixed-length queries. The
-queries will be answered in the order they are received.
-
-Note that there is no response caching, nor any software limits in place on p0f
-end, so it is your responsibility to write reasonably well-behaved clients.
-
-Queries have exactly 21 bytes. The format is:
-
-  - Magic dword (0x50304601), in native endian of the platform.
-
-  - Address type byte: 4 for IPv4, 6 for IPv6.
-
-  - 16 bytes of address data, network endian. IPv4 addresses should be
-    aligned to the left.
-
-To such a query, p0f responds with:
-
-  - Another magic dword (0x50304602), native endian.
-
-  - Status dword: 0x00 for 'bad query', 0x10 for 'OK', and 0x20 for 'no match'.
-
-  - Host information, valid only if status is 'OK' (byte width in square
-    brackets):
-
-    [4]  first_seen  - unix time (seconds) of first observation of the host.
-
-    [4]  last_seen   - unix time (seconds) of most recent traffic.
-
-    [4]  total_conn  - total number of connections seen.
-
-    [4]  uptime_min  - calculated system uptime, in minutes. Zero if not known.
-
-    [4]  up_mod_days - uptime wrap-around interval, in days.
-
-    [4]  last_nat    - time of the most recent detection of IP sharing (NAT,
-                       load balancing, proxying). Zero if never detected.
-
-    [4]  last_chg    - time of the most recent individual OS mismatch (e.g.,
-                       due to multiboot or IP reuse).
-
-    [2]  distance    - system distance (derived from TTL; -1 if no data).
-
-    [1]  bad_sw      - p0f thinks the User-Agent or Server strings aren't
-                       accurate. The value of 1 means OS difference (possibly
-                       due to proxying), while 2 means an outright mismatch.
-
-                       NOTE: If User-Agent is not present at all, this value
-                       stays at 0.
-
-    [1]  os_match_q  - OS match quality: 0 for a normal match; 1 for fuzzy
-                       (e.g., TTL or DF difference); 2 for a generic signature;
-                       and 3 for both.
-
-    [32] os_name     - NUL-terminated name of the most recent positively matched
-                       OS. If OS not known, os_name[0] is NUL.
-
-                       NOTE: If the host is first seen using an known system and
-                       then switches to an unknown one, this field is not
-                       reset.
-
-    [32] os_flavor   - OS version. May be empty if no data.
-
-    [32] http_name   - most recent positively identified HTTP application
-                       (e.g. 'Firefox').
-
-    [32] http_flavor - version of the HTTP application, if any.
-
-    [32] link_type   - network link type, if recognized.
-
-    [32] language    - system language, if recognized.
-
-A simple reference implementation of an API client is provided in p0f-client.c.
-Implementations in C / C++ may reuse api.h from p0f source code, too.
-
-Developers using the API should be aware of several important constraints:
-
-  - The maximum number of simultaneous API connections is capped to 20. The
-    limit may be adjusted with the -S parameter, but rampant parallelism may
-    lead to poorly controlled latency; consider a single query pipeline,
-    possibly with prioritization and caching.
-    
-  - The maximum number of hosts and connections tracked at any given time is
-    subject to configurable limits. You should look at your traffic stats and
-    see if the defaults are suitable.
-
-    You should also keep in mind that whenever you are subject to an ongoing
-    DDoS or SYN spoofing DoS attack, p0f may end up dropping entries faster
-    than you could query for them. It's that or running out of memory, so
-    don't fret.
-
-  - Cache entries with no activity for more than 120 minutes will be dropped
-    even if the cache is nearly empty. The timeout is adjustable with -t, but
-    you should not use the API to obtain ancient data; if you routinely need to
-    go back hours or days, parse the logs instead of wasting RAM.
-
-
 
 == TCP signatures ==
 
 For TCP traffic, signature layout is as follows:
 
-sig   = *:128:0:*:8192,0:mss,nop,nop,sok:df,id+:0
-sig   = *:128:0:*:8192,2:mss,nop,ws,nop,nop,sok:df,id+:0
-sig   = *:128:0:*:8192,8:mss,nop,ws,nop,nop,sok:df,id+:0
-sig   = *:128:0:*:8192,2:mss,nop,ws,sok,ts:df,id+:0
+sig   = 4:128:mss,nop,nop,sok:df,id+
+sig   = 4:128:mss,nop,ws,nop,nop,sok:df,id+
+sig   = 4:128:mss,nop,ws,nop,nop,sok:df,id+
+sig   = 4:128:mss,nop,ws,sok,ts:df,id+
 
-sig = ver:ittl:olen:mss:wsize,scale:olayout:quirks:pclass
+sig = ver:ittl:olayout:quirks
 
   ver        - signature for IPv4 ('4'), IPv6 ('6'), or both ('*').
 
@@ -492,10 +402,7 @@ layout:
 
 sig = ver:horder:habsent:expsw
 
-  ver        - 0 for HTTP/1.0, 1 for HTTP/1.1, or '*' for any. 
-
-               NEW SIGNATURES: Copy the value literally, unless you have a
-               specific reason to do otherwise.
+  ver        - 1.0 for HTTP/1.0, 1.1 for HTTP/1.1
 
   horder     - comma-separated, ordered list of headers that should appear in
                matching traffic. Substrings to match within each of these
@@ -511,31 +418,9 @@ sig = ver:horder:habsent:expsw
                e.g. "?Referer". P0f will accept their disappearance, but will
                not allow them to appear at any other location.
 
-               NEW SIGNATURES: Review the list and remove any headers that
-               appear to be irrelevant to the fingerprinted software, and mark
-               transient ones with '?'. Remove header values that do not add
-               anything to the signature, or are request- or user-specific.
-               In particular, pay attention to Accept, Accept-Language, and
-               Accept-Charset, as they are highly specific to request type
-               and user settings.
-
                P0f automatically removes some headers, prefixes others with '?',
                and inhibits the value of fields such as 'Referer' or 'Cookie' -
                but this is not a substitute for manual review.
-
-               NOTE: Server signatures may differ depending on the request
-               (HTTP/1.1 versus 1.0, keep-alive versus one-shot, etc) and on the
-               returned resource (e.g., CGI versus static content). Play around,
-               browse to several URLs, also try curl and wget.
-
-  habsent    - comma-separated list of headers that must *not* appear in
-               matching traffic. This is particularly useful for noting the
-               absence of standard headers (e.g. 'Host'), or for differentiating
-               between otherwise very similar signatures.
-
-               NEW SIGNATURES: P0f will automatically highlight the absence of
-               any normally present headers; other entries may be added where
-               necessary.
 
   expsw      - expected substring in 'User-Agent' or 'Server'. This is not
                used to match traffic, and merely serves to detect dishonest
