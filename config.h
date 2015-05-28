@@ -196,6 +196,7 @@ static struct http_id req_optional[] = {
   { "Authorization", 0 },
   { "Proxy-Authorization", 0 },
   { "Cache-Control", 0 },
+  { "X-Requested-With", 0 },
   { 0, 0 }
 };
 
