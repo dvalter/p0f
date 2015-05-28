@@ -43,7 +43,7 @@ if(count($resp) == 0) {
         'http_signature', 'ssl_signature', 'ssl_remote_time', 'tcp_signature'
     ))) continue;
 
-    if(in_array($key, array('first_seen', 'last_seen', 'ssl_remote_time', 'ssl_recv_time'))) {
+    if(in_array($key, array('first_seen', 'last_seen', 'ssl_remote_time'))) {
         if($value == 0) {
             $value = "";
         } else {

@@ -120,7 +120,7 @@ struct host_data {
   u8 ssl_signature[SIGNATURE_LENGTH + 1];
 
   u32 ssl_remote_time;                  /* Last client timestamp from SSL     */
-  u32 ssl_recv_time;                    /* Time drift derived from SSL        */
+  s32 ssl_remote_time_drift;            /* Time drift derived from SSL        */
 };
 
 /* TCP flow record, maintained until all fingerprinting modules are happy: */

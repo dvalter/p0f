@@ -180,25 +180,26 @@ s32 handle_query(u8* q, u8* r) {
     r = append(r, http_200_response);
     r = append(r, "{\n");
 
-    r = append_json_u32     (r, "ip_version",       ip_ver);
-    r = append_json_string  (r, "ip",               addr_to_str(cli_addr, ip_ver));
+    r = append_json_u32     (r, "ip_version",             ip_ver);
+    r = append_json_string  (r, "ip",                     addr_to_str(cli_addr, ip_ver));
 
-    r = append_json_s32     (r, "uptime_minutes",    h->last_up_min);
-    r = append_json_u32     (r, "uptime_mod_days",   h->up_mod_days);
+    r = append_json_s32     (r, "uptime_minutes",         h->last_up_min);
+    r = append_json_u32     (r, "uptime_mod_days",        h->up_mod_days);
 
-    r = append_json_u32     (r, "first_seen",        h->first_seen);
-    r = append_json_u32     (r, "last_seen",         h->last_seen);
-    r = append_json_u32     (r, "total_conn",        h->total_conn);
+    r = append_json_u32     (r, "first_seen",             h->first_seen);
+    r = append_json_u32     (r, "last_seen",              h->last_seen);
+    r = append_json_u32     (r, "total_conn",             h->total_conn);
 
-    r = append_json_string  (r, "tcp_signature",     &h->tcp_signature);
+    r = append_json_string  (r, "tcp_signature",         &h->tcp_signature);
 
-    r = append_json_u32     (r, "distance",          h->distance);
-    r = append_json_u32     (r, "mtu",               h->mtu);
+    r = append_json_u32     (r, "distance",               h->distance);
+    r = append_json_u32     (r, "mtu",                    h->mtu);
 
-    r = append_json_string  (r, "http_signature",    &h->http_signature);
+    r = append_json_string  (r, "http_signature",         &h->http_signature);
 
-    r = append_json_string  (r, "ssl_signature",     &h->ssl_signature);
-    r = append_json_u32     (r, "ssl_remote_time",   h->ssl_remote_time);
+    r = append_json_string  (r, "ssl_signature",          &h->ssl_signature);
+    r = append_json_u32     (r, "ssl_remote_time",         h->ssl_remote_time);
+    r = append_json_s32     (r, "ssl_remote_time_drift",   h->ssl_remote_time_drift);
 
 
     //remove last comma

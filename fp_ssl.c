@@ -547,8 +547,8 @@ u8 process_ssl(u8 to_srv, struct packet_flow* f) {
 
 
   if (sig.remote_time && !(sig.flags & SSL_FLAG_RTIME)) {
-    f->client->ssl_remote_time = sig.remote_time;
-    f->client->ssl_recv_time   = sig.recv_time;
+    f->client->ssl_remote_time         = sig.remote_time;
+    f->client->ssl_remote_time_drift   = sig.remote_time - sig.recv_time;
   }
 
 
