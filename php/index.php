@@ -23,6 +23,11 @@ $resp = (array)json_decode(
     file_get_contents("http://127.0.0.1:1338/?ip=" . $QUERY_IP . "&ip_version=4")
 );
 
+if(count($resp) == 0) {
+    echo "<h2>No data</h2>";
+    exit;
+
+}
 ?>
 <h2>Fingerprint Matching</h2>
 <table border="1">
