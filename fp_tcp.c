@@ -196,6 +196,12 @@ struct tcp_sig* fingerprint_tcp(u8 to_srv, struct packet_data* pk,
 
   struct tcp_sig* sig;
   struct tcp_sig_record* m;
+  u8  dist = guess_dist(pk->ttl);
+
+  if (to_srv)
+    f->client->distance = dist;
+  else
+    f->server->distance = dist;
 
   sig = ck_alloc(sizeof(struct tcp_sig));
   packet_to_sig(pk, sig);
@@ -208,22 +214,15 @@ struct tcp_sig* fingerprint_tcp(u8 to_srv, struct packet_data* pk,
       pk->mss == SPECIAL_MSS) f->sendsyn = 1;
 
   if (to_srv) 
-    start_observation(f->sendsyn ? "sendsyn probe" : "syn", 4, 1, f);
+    start_observation(f->sendsyn ? "sendsyn probe" : "syn", 3, 1, f);
   else
-    start_observation(f->sendsyn ? "sendsyn response" : "syn+ack", 4, 0, f);
-
-
-  add_observation_field("os", NULL);
+    start_observation(f->sendsyn ? "sendsyn response" : "syn+ack", 3, 0, f);
 
   if (m && m->bad_ttl) {
-
     OBSERVF("dist", "<= %u", sig->dist);
 
   } else {
 
-    if (to_srv) f->client->distance = sig->dist;
-    else f->server->distance = sig->dist;
-    
     OBSERVF("dist", "%u", sig->dist);
 
   }
