@@ -95,8 +95,10 @@ s32 handle_query(u8* q, u8* r) {
 	  return -1;
   }
 
-  if(http_auth_base64) {
-    //respond with unauthorized
+  snprintf(&tmp, HTTP_MAX_URL, "Authorization: Basic %s", http_auth_base64);
+
+  if(http_auth_base64 && !strstr(q, tmp)) {
+    //respond with unauthorized if the ua didn't provide the correct credentials
     strncpy((char*)r, http_401_response, sizeof(http_401_response)-1);
     return sizeof(http_401_response)-1;
   }
@@ -104,6 +106,7 @@ s32 handle_query(u8* q, u8* r) {
   response_start = r;
 
   memset(r, 0, HTTP_SERVER_OUTPUT_BUFFER_SIZE);
+  memset(tmp, 0, HTTP_MAX_URL);
   memset(param_ip, 0, HTTP_MAX_URL);
 
   sscanf(q, "%s %s %s\n", method, uri, version);
