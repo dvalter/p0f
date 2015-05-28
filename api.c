@@ -213,9 +213,4 @@ s32 handle_query(u8* q, u8* r) {
   }
 
   return r - response_start;
-/*
-
-  r->ssl_recv_time    = h->ssl_recv_time;
-
-*/
 }
