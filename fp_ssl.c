@@ -393,7 +393,7 @@ static u8* dump_sig(struct ssl_sig* sig, u8 fingerprint) {
     rlen += _len;                                    \
   } while (0)
 
-  RETF("%i.%i:", sig->request_version >> 8, sig->request_version & 0xFF);
+  RETF("%i.%i|", sig->request_version >> 8, sig->request_version & 0xFF);
 
   for (i = 0; sig->cipher_suites[i] != END_MARKER; i++) {
     u32 c = sig->cipher_suites[i];
@@ -406,7 +406,7 @@ static u8* dump_sig(struct ssl_sig* sig, u8 fingerprint) {
     }
   }
 
-  RETF(":");
+  RETF("|");
 
   for (i = 0; sig->extensions[i] != END_MARKER; i++) {
     u32 ext = sig->extensions[i];
@@ -423,7 +423,7 @@ static u8* dump_sig(struct ssl_sig* sig, u8 fingerprint) {
     }
   }
 
-  RETF(":");
+  RETF("|");
 
   int had_prev = 0;
   for (i = 0; flags[i].name != NULL; i++) {

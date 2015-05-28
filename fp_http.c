@@ -131,7 +131,7 @@ static u8* dump_sig(u8 to_srv, struct http_sig* hsig) {
     rlen += _len; \
   } while (0)
     
-  RETF("%u:", hsig->http_ver);
+  RETF("%u|", hsig->http_ver);
 
   for (i = 0; i < hsig->hdr_cnt; i++) {
 
@@ -210,7 +210,7 @@ static u8* dump_sig(u8 to_srv, struct http_sig* hsig) {
 
   }
 
-  RETF(":");
+  RETF("|");
 
   if ((val = hsig->sw)) {
 

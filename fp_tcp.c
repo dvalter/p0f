@@ -89,7 +89,7 @@ static u8* dump_sig(struct packet_data* pk, struct tcp_sig* ts, u16 syn_mss) {
     rlen += _len; \
   } while (0)
 
-  RETF("%u:%u:", pk->ip_ver, (pk->ttl + dist));
+  RETF("%u|%u|", pk->ip_ver, (pk->ttl + dist));
 
   for (i = 0; i < pk->opt_cnt; i++) {
 
@@ -123,7 +123,7 @@ static u8* dump_sig(struct packet_data* pk, struct tcp_sig* ts, u16 syn_mss) {
 
   }
 
-  RETF(":");
+  RETF("|");
 
   if (pk->quirks) {
 

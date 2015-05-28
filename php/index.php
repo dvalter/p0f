@@ -54,7 +54,7 @@ $resp = (array)json_decode(
 </table>
 <?php
 if ($resp["tcp_signature"] != "") {
-    list($ver, $ittl, $olayout, $quirks) = explode(":", $resp['tcp_signature']);
+    list($ver, $ittl, $olayout, $quirks) = explode("|", $resp['tcp_signature']);
 ?>
     <h2>TCP Info</h2>
     <table border=1>
@@ -68,7 +68,7 @@ if ($resp["tcp_signature"] != "") {
 }
 
 if (trim($resp["http_signature"]) != "") {
-    list($ver, $horder, $expsw) = explode(":", $resp['http_signature']);
+    list($ver, $horder, $expsw) = explode("|", $resp['http_signature']);
 
     $horder = preg_replace("/,(?![^\[\]]*\])/", "<br/>", $horder);
 ?>
@@ -83,7 +83,7 @@ if (trim($resp["http_signature"]) != "") {
 }
 
 if (trim($resp["ssl_signature"]) != "") {
-    list($sslver, $ciphers, $extensions, $sslflags) = explode(":", $resp['ssl_signature']);
+    list($sslver, $ciphers, $extensions, $sslflags) = explode("|", $resp['ssl_signature']);
 
     $ciphers = implode("<br/>",array_map(function($cipher) use ($tlsCipherSuiteRegistry) {
         $cipher = hexdec($cipher);
