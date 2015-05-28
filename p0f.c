@@ -67,7 +67,6 @@ static u8 *use_iface,                   /* Interface to listen on             */
           *orig_rule,                   /* Original filter rule               */
           *switch_user,                 /* Target username                    */
           *log_file,                    /* Binary log file name               */
-          *fp_file,                     /* Location of p0f.fp                 */
           *read_file;                   /* File to read pcap data from        */
 
 static u16 api_port;                    /* TCP Port of the API */
@@ -130,7 +129,6 @@ static void usage(void) {
 "\n"
 "Operating mode and output settings:\n"
 "\n"
-"  -f file   - read fingerprint database from 'file' (%s)\n"
 "  -o file   - write information to the specified log file\n"
 "  -P port   - answer to API queries at the given TCP port\n"
 "  -u user   - switch to the specified unprivileged account and chroot\n"
@@ -150,7 +148,6 @@ static void usage(void) {
 "\n"
 "Problems? You can reach the author at <lcamtuf@coredump.cx>.\n",
 
-    FP_FILE,
 #ifndef __CYGWIN__
     API_MAX_CONN,
 #endif /* !__CYGWIN__ */
@@ -1019,7 +1016,7 @@ int main(int argc, char** argv) {
   if (getuid() != geteuid())
     FATAL("Please don't make me setuid. See README for more.\n");
 
-  while ((r = getopt(argc, argv, "+LS:df:i:m:o:pr:P:t:u:v")) != -1) switch (r) {
+  while ((r = getopt(argc, argv, "+LS:di:m:o:pr:P:t:u:v")) != -1) switch (r) {
 
     case 'L':
 
@@ -1053,14 +1050,6 @@ int main(int argc, char** argv) {
         FATAL("Double werewolf mode not supported yet.");
 
       daemon_mode = 1;
-      break;
-
-    case 'f':
-
-      if (fp_file)
-        FATAL("Multiple -f options not supported.");
-
-      fp_file = (u8*)optarg;
       break;
 
     case 'i':

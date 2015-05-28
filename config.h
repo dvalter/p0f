@@ -17,12 +17,6 @@
  * Things you may reasonably want to change *
  ********************************************/
 
-/* Default location of p0f.fp: */
-
-#ifndef FP_FILE
-#  define FP_FILE           "p0f.fp"
-#endif /* !FP_FILE */
-
 /* Initial permissions on log files: */
 
 #ifndef LOG_MODE
@@ -131,10 +125,6 @@
    and therefore, changes within SMALL_TTL_CHG should be completely ignored: */
 
 #define NEAR_TTL_LIMIT      9
-
-/* Number of packet scores to keep for NAT detection (< 256): */
-
-#define NAT_SCORES          32
 
 /* Number of hash buckets for p0f.fp signatures: */
 
