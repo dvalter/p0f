@@ -28,6 +28,7 @@
 /* Process API queries. */
 
 const char http_200_response[] = "HTTP/1.0 200 OK\r\nConnection: close\r\nContent-Type: application/json\r\n\r\n";
+const char http_401_response[] = "HTTP/1.0 401 Unauthorized\r\nWWW-Authenticate: Basic realm=\"secured\"\r\nConnection: close\r\nContent-Type: text/html\r\n\r\nUnauhorized";
 const char http_404_response[] = "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\nNot Found";
 const char http_500_response[] = "HTTP/1.0 500 Internal Server Error\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n";
 const char http_501_response[] = "HTTP/1.0 501 Not Implemented\r\nConnection: close\r\nContent-Type: text/html\r\n\r\nNot Implemented";
@@ -94,6 +95,12 @@ s32 handle_query(u8* q, u8* r) {
 	  return -1;
   }
 
+  if(http_auth_base64) {
+    //respond with unauthorized
+    strncpy((char*)r, http_401_response, sizeof(http_401_response)-1);
+    return sizeof(http_401_response)-1;
+  }
+
   response_start = r;
 
   memset(r, 0, HTTP_SERVER_OUTPUT_BUFFER_SIZE);
@@ -105,7 +112,7 @@ s32 handle_query(u8* q, u8* r) {
 
   if (strcasecmp(method, "GET")) {
     strncpy((char*)r, http_501_response, sizeof(http_501_response)-1);
-    return (http_501_response)-1;
+    return sizeof(http_501_response)-1;
   }
 
   //split uri, query_string

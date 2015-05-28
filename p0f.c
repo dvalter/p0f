@@ -69,8 +69,9 @@ static u8 *use_iface,                   /* Interface to listen on             */
           *switch_user,                 /* Target username                    */
           *log_file,                    /* Binary log file name               */
           *read_file,                   /* File to read pcap data from        */
-          *http_auth,                   /* HTTP username and password         */
-          *http_auth_base64;            /* base64 encoded username and passwd */
+          *http_auth;                   /* HTTP username and password         */
+
+u8 *http_auth_base64;            /* base64 encoded username and passwd */
 
 static u16 api_port;                    /* TCP Port of the API */
 
