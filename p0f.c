@@ -50,6 +50,7 @@
 #include "tcp.h"
 #include "fp_http.h"
 #include "p0f.h"
+#include "base64.h"
 
 #ifndef PF_INET6
 #  define PF_INET6          10
