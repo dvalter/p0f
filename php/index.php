@@ -75,7 +75,7 @@ if (trim($resp["http_signature"]) != "") {
     <h2>HTTP Info</h2>
     <table border=1>
         <tr><td>HTTP Signature</td><td><?=$resp["http_signature"]?></td></tr>
-        <tr><td>Version</td><td>HTTP 1.<?=$ver?></td></tr>
+        <tr><td>Version</td><td>HTTP <?=$ver?></td></tr>
         <tr><td>Present Headers</td><td><?=$horder?></td></tr>
         <tr><td>User-Agent</td><td><?=$expsw?></td></tr>
     </table>
