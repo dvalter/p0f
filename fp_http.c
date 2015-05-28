@@ -105,12 +105,6 @@ void http_init(void) {
     req_skipval[i].id = lookup_hdr(SLOF(req_skipval[i].name), 1);
     i++;
   }
-
-  i = 0;
-  while (req_common[i].name) {
-    req_common[i].id = lookup_hdr(SLOF(req_common[i].name), 1);
-    i++;
-  }
 }
 
 /* Dump a HTTP signature. */
@@ -213,25 +207,6 @@ static u8* dump_sig(u8 to_srv, struct http_sig* hsig) {
       RETF("=[%s]", tmp);
 
     }
-
-  }
-
-  RETF(":");
-
-  list = req_common;
-  had_prev = 0;
-
-  while (list->name) {
-
-    for (i = 0; i < hsig->hdr_cnt; i++) 
-      if (hsig->hdr[i].id == list->id) break;
-
-    if (i == hsig->hdr_cnt) {
-      RETF("%s%s", had_prev ? "," : "", list->name);
-      had_prev = 1;
-    }
-
-    list++;
 
   }
 

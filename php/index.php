@@ -67,11 +67,8 @@ if ($resp["tcp_signature"] != "") {
 <?php
 }
 
-
-
-
 if (trim($resp["http_signature"]) != "") {
-    list($ver, $horder, $habsent, $expsw) = explode(":", $resp['http_signature']);
+    list($ver, $horder, $expsw) = explode(":", $resp['http_signature']);
 
     $horder = preg_replace("/,(?![^\[\]]*\])/", "<br/>", $horder);
 ?>
@@ -80,7 +77,6 @@ if (trim($resp["http_signature"]) != "") {
         <tr><td>HTTP Signature</td><td><?=$resp["http_signature"]?></td></tr>
         <tr><td>Version</td><td>HTTP 1.<?=$ver?></td></tr>
         <tr><td>Present Headers</td><td><?=$horder?></td></tr>
-        <tr><td>Absent Headers</td><td><?=$habsent?></td></tr>
         <tr><td>User-Agent</td><td><?=$expsw?></td></tr>
     </table>
 <?php

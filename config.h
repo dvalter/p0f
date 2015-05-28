@@ -199,21 +199,6 @@ static struct http_id req_optional[] = {
   { 0, 0 }
 };
 
-/* Common headers that are expected to be present at all times, and deserve
-   a special mention if absent in a signature: */
-
-static struct http_id req_common[] = {
-  { "Host", 0 },
-  { "User-Agent", 0 },
-  { "Connection", 0 },
-  { "Accept", 0 },
-  { "Accept-Encoding", 0 },
-  { "Accept-Language", 0 },
-  { "Accept-Charset", 0 },
-  { "Keep-Alive", 0 },
-  { 0, 0 }
-};
-
 /* Headers for which values change depending on the context, and therefore
    should not be included in proposed signatures. This is on top of the
    "optional" header lists, which already implies skipping the value. */
