@@ -285,7 +285,7 @@ void free_sig_hdrs(struct http_sig* h) {
 
 /* Parse name=value pairs into a signature. */
 
-static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
+static u8 parse_pairs(struct packet_flow* f, u8 can_get_more) {
 
   u32 plen = f->req_len;
 
@@ -327,8 +327,7 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
 
     if ((hcount = f->http_tmp.hdr_cnt) >= HTTP_MAX_HDRS) {
 
-      DEBUG("[#] Too many HTTP headers in a %s.\n", to_srv ? "request" :
-            "response");
+      DEBUG("[#] Too many HTTP headers in a request.\n");
 
       f->in_http = -1;
       return 0;
@@ -351,8 +350,7 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
 
       if (!can_get_more) {
 
-        DEBUG("[#] End of HTTP %s before end of headers.\n",
-              to_srv ? "request" : "response");
+        DEBUG("[#] End of HTTP request before end of headers.\n");
         f->in_http = -1;
 
       }
@@ -393,8 +391,7 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
     }
 
     if (vlen > HTTP_MAX_HDR_VAL) {
-      DEBUG("[#] HTTP %s header value length exceeded.\n",
-            to_srv ? "request" : "response");
+      DEBUG("[#] HTTP request header value length exceeded.\n");
       f->in_http = -1;
       return -1;
     }
@@ -402,8 +399,7 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
     if (off == plen) {
 
       if (!can_get_more) {
-        DEBUG("[#] End of HTTP %s before end of headers.\n",
-              to_srv ? "request" : "response");
+        DEBUG("[#] End of HTTP request before end of headers.\n");
         f->in_http = -1;
       }
 
@@ -450,8 +446,7 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
   }
 
   if (!can_get_more) {
-    DEBUG("[#] End of HTTP %s before end of headers.\n",
-          to_srv ? "request" : "response");
+    DEBUG("[#] End of HTTP request before end of headers.\n");
     f->in_http = -1;
   }
 
@@ -460,7 +455,7 @@ static u8 parse_pairs(u8 to_srv, struct packet_flow* f, u8 can_get_more) {
 }
 
 
-/* Examine request or response; returns 1 if more data needed and plausibly can
+/* Examine request; returns 1 if more data needed and plausibly can
    be read. Note that the buffer is always NUL-terminated. */
 
 u8 process_http(u8 to_srv, struct packet_flow* f) {
@@ -627,6 +622,6 @@ u8 process_http(u8 to_srv, struct packet_flow* f) {
 
   f->http_pos = f->http_pos + off_proxyprotocol;
 
-  return parse_pairs(1, f, can_get_more);
+  return parse_pairs(f, can_get_more);
 
 }
