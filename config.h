@@ -46,7 +46,7 @@
 /* Default number of API connections permitted (adjustable via -c): */
 
 #ifndef API_MAX_CONN
-#  define API_MAX_CONN      20
+#  define API_MAX_CONN      100
 #endif /* !API_MAX_CONN */
 
 /* Maximum TTL distance for non-fuzzy signature matching: */

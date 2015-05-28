@@ -27,10 +27,10 @@
 
 /* Process API queries. */
 
-const char http_200_response[] = "HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: application/json\r\n\r\n";
-const char http_404_response[] = "HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\nNot Found";
-const char http_500_response[] = "HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n";
-const char http_501_response[] = "HTTP/1.1 501 Not Implemented\r\nConnection: close\r\nContent-Type: text/html\r\n\r\nNot Implemented";
+const char http_200_response[] = "HTTP/1.0 200 OK\r\nConnection: close\r\nContent-Type: application/json\r\n\r\n";
+const char http_404_response[] = "HTTP/1.0 404 Not Found\r\nConnection: close\r\nContent-Type: text/html\r\n\r\nNot Found";
+const char http_500_response[] = "HTTP/1.0 500 Internal Server Error\r\nConnection: close\r\nContent-Type: text/html\r\n\r\n";
+const char http_501_response[] = "HTTP/1.0 501 Not Implemented\r\nConnection: close\r\nContent-Type: text/html\r\n\r\nNot Implemented";
 
 u8* append(u8* r, u8* input) {
       strncpy((char*)r, (char*)input, strlen(input));
@@ -90,16 +90,20 @@ s32 handle_query(u8* q, u8* r) {
 
   char *p, *p2;
 
+  //check if we received a complete query
+  if(!strstr(q, "\r\n\r\n")) {
+	  return -1;
+  }
+
 
   response_start = r;
 
   memset(r, 0, HTTP_SERVER_OUTPUT_BUFFER_SIZE);
 
-  //TODO: check if query is complete
 
   sscanf(q, "%s %s %s\n", method, uri, version);
 
-  DEBUG("[X] API Request: %s\n", uri);
+  DEBUG("[API] API Request: %s\n", uri);
 
   if (strcasecmp(method, "GET")) {
     strncpy((char*)r, http_501_response, sizeof(http_501_response)-1);
@@ -144,7 +148,7 @@ s32 handle_query(u8* q, u8* r) {
     p = strtok(NULL, "&");
   }
 
-  DEBUG("[X] API Request for ip_version: %s, ip: %s\n", param_ip_version, param_ip);
+  DEBUG("[API] API Request for ip_version: %s, ip: %s\n", param_ip_version, param_ip);
 
   if (strcmp(param_ip_version, "4") == 0 ||
       strcmp(param_ip_version, "6") == 0 ) {

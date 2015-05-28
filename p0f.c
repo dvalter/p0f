@@ -738,8 +738,8 @@ static u32 regen_pfds(struct pollfd* pfds, struct api_client** ctable) {
 
     /* If we haven't received a complete query yet, wait for POLLIN.
        Otherwise, we want to write stuff. */
-//TODO: Check if header was already read
-    if (api_cl[i].in_off < HTTP_SERVER_INPUT_BUFFER_SIZE)
+
+    if (api_cl[i].in_off <= 0)
       pfds[count].events = (POLLIN | POLLERR | POLLHUP);
     else
       pfds[count].events = (POLLOUT | POLLERR | POLLHUP);
@@ -827,7 +827,7 @@ poll_again:
 
           /* Shut down API connection and free its state. */
 
-          DEBUG("[#] API connection on fd %d closed.\n", pfds[cur].fd);
+          DEBUG("[API] API connection on fd %d closed.\n", pfds[cur].fd);
 
           close(pfds[cur].fd);
           ctable[cur]->fd = -1;
@@ -845,6 +845,9 @@ poll_again:
 
         default:
 
+          if(ctable[cur]->out_length < 0)
+            FATAL("out_length < 0");
+
           /* Write API response, restart state when complete. */
 
           i = write(pfds[cur].fd,
@@ -853,7 +856,7 @@ poll_again:
 
           if (i == -1) PFATAL("write() on API socket fails despite POLLOUT.");
 
-          DEBUG("%u bytes written to api socket\n", i);
+          DEBUG("[poll, fd %u] %u bytes written to api socket\n", ctable[cur]->fd, i);
 
           ctable[cur]->out_off += i;
 
@@ -862,7 +865,7 @@ poll_again:
             ctable[cur]->in_off = ctable[cur]->out_off = 0;
             pfds[cur].events   = (POLLIN | POLLERR | POLLHUP);
 
-            DEBUG("[#] Wrote all data to api connection, fd %d closed.\n", pfds[cur].fd);
+            DEBUG("[poll, fd %d] Wrote all data to api connection, fd closed.\n", pfds[cur].fd);
 
             close(pfds[cur].fd);
             ctable[cur]->fd = -1;
@@ -909,7 +912,7 @@ poll_again:
               api_cl[i].in_off = api_cl[i].out_off = 0;
               pfd_count = regen_pfds(pfds, ctable);
 
-              DEBUG("[#] Accepted new API connection, fd %d.\n", api_cl[i].fd);
+              DEBUG("[poll, fd: %d] Accepted new API connection.\n", api_cl[i].fd);
 
               goto poll_again;
 
@@ -926,23 +929,22 @@ poll_again:
           if (ctable[cur]->in_off >= HTTP_SERVER_INPUT_BUFFER_SIZE)
             FATAL("Inconsistent p0f_api_query state.\n");
 
-          i = read(pfds[cur].fd, 
+          i = read(pfds[cur].fd,
                    ((char*)&ctable[cur]->in_data) + ctable[cur]->in_off,
                    HTTP_SERVER_INPUT_BUFFER_SIZE - ctable[cur]->in_off);
+
+          DEBUG("[poll, fd %d] Read %u bytes from fd\n", pfds[cur].fd, i);
 
           if (i < 0) PFATAL("read() on API socket fails despite POLLIN.");
 
           ctable[cur]->in_off += i;
 
-          /* Query in place? Compute response and prepare to send it back. */
-//TODO: handle the case if we could not read the header with one read
-        //  if (ctable[cur]->in_off == HTTP_SERVER_INPUT_BUFFER_SIZE) {
+          ctable[cur]->out_length = handle_query(&ctable[cur]->in_data, &ctable[cur]->out_data);
 
-            ctable[cur]->out_length = handle_query(&ctable[cur]->in_data, &ctable[cur]->out_data);
+          if(ctable[cur]->out_length > 0) {
+            /* Query in place? Compute response and prepare to send it back. */
             pfds[cur].events = (POLLOUT | POLLERR | POLLHUP);
-
-         // }
-
+          }
       }
 
 
