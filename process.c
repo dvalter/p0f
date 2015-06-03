@@ -842,7 +842,7 @@ static void nuke_hosts(void) {
   nuke_flows(1);
 
   while (kcnt && CP(target)) {
-    struct host_data* next = target->older;
+    struct host_data* next = target->newer;
     if (!target->use_cnt) { kcnt--; destroy_host(target); }
     target = next;
   }
