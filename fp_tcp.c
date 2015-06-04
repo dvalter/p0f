@@ -235,9 +235,8 @@ struct tcp_sig* fingerprint_tcp(u8 to_srv, struct packet_data* pk,
   p = strncpy(
     to_srv ? (char*)f->client->tcp_signature : (char*)f->server->tcp_signature,
     raw_sig,
-    strlen(raw_sig) > SIGNATURE_LENGTH ? SIGNATURE_LENGTH : strlen(raw_sig)
+    (strlen(raw_sig) > SIGNATURE_LENGTH ? SIGNATURE_LENGTH : strlen(raw_sig)) + 1
   );
-  p = "\0";
 
   add_observation_field("raw_sig", raw_sig);
 

@@ -541,9 +541,8 @@ u8 process_ssl(u8 to_srv, struct packet_flow* f) {
   p = strncpy(
     (char*)f->client->ssl_signature,
     raw_sig,
-    strlen(raw_sig) > SIGNATURE_LENGTH ? SIGNATURE_LENGTH : strlen(raw_sig)
+    (strlen(raw_sig) > SIGNATURE_LENGTH ? SIGNATURE_LENGTH : strlen(raw_sig)) + 1
   );
-  p = "\0";
 
 
   if (sig.remote_time && !(sig.flags & SSL_FLAG_RTIME)) {

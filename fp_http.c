@@ -271,9 +271,8 @@ static void extract_http_request_signature(struct packet_flow* f) {
   p = strncpy(
     (char*)client->http_signature,
     http_signature,
-    strlen(http_signature) > SIGNATURE_LENGTH ? SIGNATURE_LENGTH : strlen(http_signature)
+    (strlen(http_signature) > SIGNATURE_LENGTH ? SIGNATURE_LENGTH : strlen(http_signature)) + 1
   );
-  p = "\0";
 }
 
 
