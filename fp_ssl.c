@@ -5,6 +5,8 @@
 
   Copyright (C) 2012 by Marek Majkowski <marek@popcount.org>
 
+  Copyright (C) 2022 by Dmitry Valter <dvalter@protonmail.com>
+
   Distributed under the terms and conditions of GNU LGPL.
 
 */
