@@ -310,25 +310,12 @@ ssl_version(u_short version) {
 /* Unpack TLS fragment to a signature. We expect to hear ClientHello
  message.  -1 on parsing error, 1 if signature was extracted. */
 
-static int fingerprint_tls(struct ssl_sig* sig, const u8* fragment,
+static int fingerprint_tls(struct ssl_sig* sig, const u8* payload,
                               u32 frag_len, u16 record_version, u32 local_time) {
-  const u_char *payload;                  /* Packet payload */
-
   int size_ip;
   int size_iptotal;
   int size_tcp;
   int size_payload = frag_len;
-
-  /* define/compute tcp payload (segment) offset */
-  payload = (u_char *)(fragment);
-
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 8; j++) {
-      DEBUG("%02x ", payload[8*i + j]);
-    }
-    DEBUG(" ");
-  }
-  DEBUG("\n");
 
   if (payload[0] != TLS_HANDSHAKE) {
     DEBUG("Not a TLS handshake: 0x%02hhx\n", payload[0]);
@@ -387,14 +374,6 @@ static int fingerprint_tls(struct ssl_sig* sig, const u8* fragment,
 
   // skip copression
   const u_char *extension_data = &cipher_data[cs_len];
-
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 8; j++) {
-      DEBUG("%02x ", extension_data [8*i + j]);
-    }
-    DEBUG(" ");
-  }
-  DEBUG("\n");
 
   extension_data = extension_data + 1 + extension_data[0];
   u_short extensions_len = (extension_data[0] << 8) + extension_data[1];
